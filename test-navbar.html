@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Navbar - Full Functionality</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: sans-serif;
+            overflow: hidden;
+        }
+        h1 {
+            font-size: 3rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Example</h1>
+
+    <script>
+        const PAGE_IDENTIFICATION_DATA = {
+            "dashboard": { "name": "Dashboard", "icon": "fa-solid fa-house-user", "url": "../logged-in/dashboard.html" },
+            "soundboard": { "name": "Soundboard", "icon": "fa-solid fa-volume-up", "url": "../logged-in/soundboard.html" },
+            "notes": { "name": "Notes", "icon": "fa-solid fa-sticky-note", "url": "../logged-in/notes.html" },
+            "dailyphoto": { "name": "Dailyphoto", "icon": "fa-solid fa-image", "url": "../logged-in/dailyphoto.html" },
+            "countdowns": { "name": "Countdowns", "icon": "fa-solid fa-clock", "url": "../logged-in/countdowns.html" },
+            "weather": { "name": "Weather", "icon": "fa-solid fa-cloud-sun", "url": "../logged-in/weather.html" },
+            "dictionary": { "name": "Dictionary", "icon": "fa-solid fa-book", "url": "../logged-in/dictionary.html" },
+            "messenger-v2": { "name": "Messenger", "icon": "fa-solid fa-comments", "url": "../logged-in/messenger-tutorial.html" },
+            "games-4sp": { "name": "Games", "icon": "fa-solid fa-gamepad", "url": "../GAMES/index.html" },
+            "levium": { "name": "Levium", "icon": "fa-solid fa-globe", "url": "../logged-in/levium.html", "adminOnly": true },
+            "securly-tester": { "name": "Securly Tester", "icon": "fa-solid fa-shield-alt", "url": "../logged-in/securly-tester.html" },
+            "settings": { "name": "Settings", "icon": "fa-solid fa-gear", "url": "../logged-in/settings.html" },
+            "analytics": { "name": "Analytics", "icon": "fa-solid fa-chart-line", "url": "../logged-in/analytics.html", "adminOnly": true }
+        };
+
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyAZBKAckVa4IMvJGjcyndZx6Y1XD52lgro",
+            authDomain: "project-zirconium.firebaseapp.com",
+            projectId: "project-zirconium",
+            storageBucket: "project-zirconium.firebasestorage.app",
+            messagingSenderId: "1096564243475",
+            appId: "1:1096564243475:web:6d0956a70125eeea1ad3e6",
+            measurementId: "G-1D4F692C1Q"
+        };
+
+        const PRIVILEGED_EMAIL = '4simpleproblems@gmail.com'; 
+        const THEME_STORAGE_KEY = 'user-navbar-theme';
+
+        const DEFAULT_THEME = {
+            'name': 'Dark',
+            'logo-src': '/images/logo.png', 
+            'navbar-bg': '#000000',
+            'navbar-border': 'rgb(31 41 55)',
+            'avatar-gradient': 'linear-gradient(135deg, #374151 0%, #111827 100%)',
+            'avatar-border': '#4b5563',
+            'menu-bg': '#000000',
+            'menu-border': 'rgb(55 65 81)',
+            'menu-divider': '#374151',
+            'menu-text': '#d1d5db',
+            'menu-username-text': '#ffffff', 
+            'menu-email-text': '#9ca3af', 
+            'menu-item-hover-bg': 'rgb(55 65 81)', 
+            'menu-item-hover-text': '#ffffff',
+            'logged-out-icon-bg': '#010101',
+            'logged-out-icon-border': '#374151',
+            'logged-out-icon-color': '#DADADA',
+            'glide-icon-color': '#ffffff',
+            'tab-text': '#9ca3af',
+            'tab-hover-text': '#ffffff',
+            'tab-hover-border': '#d1d5db',
+            'tab-hover-bg': 'rgba(79, 70, 229, 0.05)',
+            'tab-active-text': '#4f46e5',
+            'tab-active-border': '#4f46e5',
+            'tab-active-bg': 'rgba(79, 70, 229, 0.1)',
+            'tab-active-hover-text': '#6366f1',
+            'tab-active-hover-border': '#6366f1',
+            'tab-active-hover-bg': 'rgba(79, 70, 229, 0.15)',
+            'pin-btn-icon-color': '#d1d5db',
+            'hint-bg': '#010101',
+            'hint-border': '#374151',
+            'hint-text': '#ffffff'
+        };
+
+        window.applyTheme = (theme) => {
+            const root = document.documentElement;
+            const themeToApply = theme || DEFAULT_THEME;
+            for (const [key, value] of Object.entries(themeToApply)) {
+                if (key !== 'logo-src' && key !== 'name') {
+                    root.style.setProperty(`--${key}`, value);
+                }
+            }
+        };
+
+        (function() {
+            let auth, db, currentUser, currentUserData, currentIsPrivileged = false;
+
+            const loadScript = (src) => new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src; script.onload = resolve; script.onerror = reject;
+                document.head.appendChild(script);
+            });
+
+            const loadCSS = (href) => new Promise((resolve) => {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet'; link.href = href; link.onload = resolve;
+                document.head.appendChild(link);
+            });
+
+            const debounce = (func, delay) => {
+                let timeoutId;
+                return (...args) => {
+                    clearTimeout(timeoutId);
+                    timeoutId = setTimeout(() => func.apply(this, args), delay);
+                };
+            };
+
+            const getIconClass = (iconName) => {
+                if (!iconName) return '';
+                if (iconName.includes('fa-')) return iconName;
+                return `fa-solid fa-${iconName}`;
+            };
+
+            const injectStyles = () => {
+                const style = document.createElement('style');
+                style.textContent = `
+                    body { padding-top: 64px; }
+                    .auth-navbar {
+                        position: fixed; top: 0; left: 0; width: 100%; height: 64px;
+                        background: var(--navbar-bg); border-bottom: 1px solid var(--navbar-border);
+                        z-index: 1000; transform-origin: top left; transition: background 0.3s;
+                    }
+                    .auth-navbar nav { padding: 0 1rem; height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1rem; position: relative; }
+                    .tab-wrapper { flex-grow: 1; display: flex; align-items: center; position: relative; min-width: 0; margin: 0 1rem; justify-content: center; height: 100%; }
+                    .tab-scroll-container { 
+                        flex-grow: 1; display: flex; align-items: center; overflow-x: auto; 
+                        scrollbar-width: none; -ms-overflow-style: none; scroll-behavior: smooth; height: 100%;
+                    }
+                    .tab-scroll-container::-webkit-scrollbar { display: none; }
+                    .scroll-glide-button {
+                        position: absolute; top: 0; height: 100%; width: 40px; display: flex; align-items: center; justify-content: center; 
+                        color: var(--glide-icon-color); font-size: 1.2rem; cursor: pointer; z-index: 10; transition: opacity 0.3s;
+                    }
+                    #glide-left { 
+                        left: -10px; background: linear-gradient(to right, var(--navbar-bg) 40%, transparent); 
+                    }
+                    #glide-right { 
+                        right: -10px; background: linear-gradient(to left, var(--navbar-bg) 40%, transparent);
+                    }
+                    .scroll-glide-button.hidden { opacity: 0; pointer-events: none; }
+                    .nav-tab { 
+                        flex-shrink: 0; padding: 8px 12px; color: var(--tab-text); font-size: 0.875rem; font-weight: 500; 
+                        border-radius: 0.7rem; transition: all 0.2s; text-decoration: none; display: flex; align-items: center; 
+                        margin-right: 8px; border: 1px solid transparent; 
+                    }
+                    .nav-tab:hover { color: var(--tab-hover-text); border-color: var(--tab-hover-border); background-color: var(--tab-hover-bg); }
+                    .nav-tab.active { color: var(--tab-active-text); border-color: var(--tab-active-border); background-color: var(--tab-active-bg); }
+
+                    .auth-menu-container {
+                        position: absolute; right: 0; top: 55px; width: 16rem; background: var(--menu-bg);
+                        border: 1px solid var(--menu-border); border-radius: 0.9rem; padding: 0.75rem;
+                        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4); transform-origin: top right;
+                        transition: transform 0.2s, opacity 0.2s; z-index: 1010;
+                    }
+                    .auth-menu-container.closed { opacity: 0; pointer-events: none; transform: translateY(-10px) scale(0.95); }
+                    .auth-menu-container.open { opacity: 1; transform: translateY(0) scale(1); }
+                    .auth-menu-link { 
+                        display: flex; align-items: center; gap: 10px; width: 100%; padding: 0.5rem 0.75rem; 
+                        font-size: 0.875rem; color: var(--menu-text); border-radius: 0.7rem; transition: 0.15s;
+                    }
+                    .auth-menu-link:hover { background-color: var(--menu-item-hover-bg); color: var(--menu-item-hover-text); }
+                    .initial-avatar {
+                        background: var(--avatar-gradient); width: 100%; height: 100%; display: flex; 
+                        align-items: center; justify-content: center; color: white; font-weight: bold;
+                    }
+                `;
+                document.head.appendChild(style);
+            };
+
+            const updateScrollGilders = () => {
+                const container = document.querySelector('.tab-scroll-container');
+                const leftBtn = document.getElementById('glide-left');
+                const rightBtn = document.getElementById('glide-right');
+                if (!container || !leftBtn || !rightBtn) return;
+                
+                const hasOverflow = container.scrollWidth > container.offsetWidth;
+                if (!hasOverflow) {
+                    leftBtn.classList.add('hidden'); rightBtn.classList.add('hidden'); return;
+                }
+                leftBtn.classList.toggle('hidden', container.scrollLeft <= 5);
+                rightBtn.classList.toggle('hidden', container.scrollLeft + container.offsetWidth >= container.scrollWidth - 5);
+            };
+
+            const setupEventListeners = () => {
+                const container = document.querySelector('.tab-scroll-container');
+                if (container) {
+                    container.addEventListener('scroll', updateScrollGilders);
+                    window.addEventListener('resize', debounce(updateScrollGilders, 50));
+                    document.getElementById('glide-left')?.addEventListener('click', () => container.scrollLeft -= 200);
+                    document.getElementById('glide-right')?.addEventListener('click', () => container.scrollLeft += 200);
+                }
+
+                const toggle = document.getElementById('auth-toggle');
+                const menu = document.getElementById('auth-menu-container');
+                if (toggle && menu) {
+                    toggle.addEventListener('click', (e) => {
+                        e.stopPropagation(); menu.classList.toggle('closed'); menu.classList.toggle('open');
+                    });
+                    document.addEventListener('click', (e) => {
+                        if (!menu.contains(e.target) && !toggle.contains(e.target)) {
+                            menu.classList.add('closed'); menu.classList.remove('open');
+                        }
+                    });
+                }
+            };
+
+            const run = async () => {
+                injectStyles();
+                window.applyTheme(DEFAULT_THEME);
+                await loadCSS("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css");
+                
+                const navHtml = `
+                    <header class="auth-navbar">
+                        <nav>
+        <div class="logo">
+            <img src="https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/logo.png" alt="Logo">
+        </div>
+                            <div class="tab-wrapper">
+                                <button id="glide-left" class="scroll-glide-button hidden"><i class="fa-solid fa-chevron-left"></i></button>
+                                <div class="tab-scroll-container">
+                                    ${Object.values(PAGE_IDENTIFICATION_DATA).map(p => `
+                                        <a href="${p.url}" class="nav-tab">
+                                            <i class="${getIconClass(p.icon)} mr-2"></i>${p.name}
+                                        </a>
+                                    `).join('')}
+                                </div>
+                                <button id="glide-right" class="scroll-glide-button hidden"><i class="fa-solid fa-chevron-right"></i></button>
+                            </div>
+                            <div class="relative">
+                                <button id="auth-toggle" class="w-10 h-10 rounded-full border border-gray-700 overflow-hidden">
+                                    <div class="initial-avatar">U</div>
+                                </button>
+                                <div id="auth-menu-container" class="auth-menu-container closed">
+                                    <div class="px-3 py-2 border-b border-gray-700 mb-2">
+                                        <p class="text-sm font-semibold text-white">Test User</p>
+                                        <p class="text-xs text-gray-400">test@example.com</p>
+                                    </div>
+                                    <a href="#" class="auth-menu-link"><i class="fa-solid fa-gear w-4"></i>Settings</a>
+                                    <a href="#" class="auth-menu-link text-red-400"><i class="fa-solid fa-right-from-bracket w-4"></i>Log Out</a>
+                                </div>
+                            </div>
+                        </nav>
+                    </header>
+                `;
+                
+                const container = document.createElement('div');
+                container.id = 'navbar-container';
+                container.innerHTML = navHtml;
+                document.body.prepend(container);
+
+                setupEventListeners();
+                updateScrollGilders();
+
+                // Optional: Try loading Firebase if you want real auth state
+                try {
+                    await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js");
+                    await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js");
+                    firebase.initializeApp(FIREBASE_CONFIG);
+                    firebase.auth().onAuthStateChanged(user => {
+                        if (user) {
+                            document.querySelector('.auth-menu-container p.text-white').textContent = user.displayName || 'User';
+                            document.querySelector('.auth-menu-container p.text-gray-400').textContent = user.email;
+                            document.querySelector('.initial-avatar').textContent = (user.displayName || user.email || 'U')[0].toUpperCase();
+                        }
+                    });
+                } catch(e) { console.log("Firebase not loaded, using placeholder."); }
+            };
+
+            run();
+        })();
+    </script>
+</body>
+</html>
