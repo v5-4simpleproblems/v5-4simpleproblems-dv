@@ -4007,9 +4007,9 @@ const performAccountDeletion = async (credential) => {
                     // It modifies the theme object *in memory* before saving/applying
                     // We use root-relative paths as defined in navigation.js
                     if (lightThemeNames.includes(theme.name)) {
-                        theme['logo-src'] = 'https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/images/logo-dark.png'; 
+                        theme['logo-src'] = 'https://cdn.jsdelivr.net/gh/4simpleproblems-v5/v5-4simpleproblems-dv@main/images/logo-dark.png'; 
                     } else {
-                        theme['logo-src'] = 'https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/images/logo.png';
+                        theme['logo-src'] = 'https://cdn.jsdelivr.net/gh/4simpleproblems-v5/v5-4simpleproblems-dv@main/images/logo.png';
                     }
                     // --- End of user logic ---
                     

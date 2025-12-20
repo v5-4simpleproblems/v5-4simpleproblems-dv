@@ -44,7 +44,7 @@ const lightThemeNames = ['Light', 'Lavender', 'Rose Gold', 'Mint', 'Pink']; // D
 
 const DEFAULT_THEME = {
     'name': 'Dark',
-    'logo-src': 'https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/images/logo.png', 
+    'logo-src': 'https://cdn.jsdelivr.net/gh/4simpleproblems-v5/v5-4simpleproblems-dv@main/images/logo.png', 
     'navbar-bg': '#000000',
     'navbar-border': 'rgb(31 41 55)',
     'avatar-gradient': 'linear-gradient(135deg, #374151 0%, #111827 100%)',
@@ -111,13 +111,13 @@ window.applyTheme = (theme) => {
     if (logoImg) {
         let newLogoSrc;
         if (themeToApply.name === 'Christmas') {
-            newLogoSrc = 'https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/images/logo-christmas.png';
+            newLogoSrc = 'https://cdn.jsdelivr.net/gh/4simpleproblems-v5/v5-4simpleproblems-dv@main/images/logo-christmas.png';
         } else {
             newLogoSrc = themeToApply['logo-src'] || DEFAULT_THEME['logo-src'];
         }
         
         // --- CDN Link Logic from test-navbar.html ---
-        if (newLogoSrc === 'https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/images/logo.png' || newLogoSrc === '/images/logo.png') {
+        if (newLogoSrc === 'https://cdn.jsdelivr.net/gh/4simpleproblems-v5/v5-4simpleproblems-dv@main/images/logo.png' || newLogoSrc === '/images/logo.png') {
             newLogoSrc = 'https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/logo.png';
         }
 
@@ -638,10 +638,10 @@ let db;
                     avatarHtml = `
                         <div class="w-full h-full relative overflow-hidden rounded-full" style="background-color: ${bgColor || '#3B82F6'}">
                              <div class="absolute inset-0 w-full h-full" style="transform: translate(${x}%, ${y}%) rotate(${rot}deg) scale(${scale}); transform-origin: center;">
-                                 <img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
-                                 ${eyes ? `<img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                                 ${mouths ? `<img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                                 ${hats ? `<img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/mibi-avatars/hats/${hats}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                                 <img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/v5-4simpleproblems-dv@main/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
+                                 ${eyes ? `<img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/v5-4simpleproblems-dv@main/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                                 ${mouths ? `<img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/v5-4simpleproblems-dv@main/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                                 ${hats ? `<img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/v5-4simpleproblems-dv@main/mibi-avatars/hats/${hats}" class="absolute inset-0 w-full h-full object-contain">` : ''}
                              </div>
                         </div>
                     `;
@@ -1113,10 +1113,10 @@ let db;
                         newContent = `
                             <div class="w-full h-full relative overflow-hidden rounded-full" style="background-color: ${bgColor || '#3B82F6'}">
                                  <div class="absolute inset-0 w-full h-full" style="transform: translate(${x}%, ${y}%) rotate(${rot}deg) scale(${scale}); transform-origin: center;">
-                                     <img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
-                                     ${eyes ? `<img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                                     ${mouths ? `<img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                                     ${hats ? `<img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/mibi-avatars/hats/${hats}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                                     <img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/v5-4simpleproblems-dv@main/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
+                                     ${eyes ? `<img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/v5-4simpleproblems-dv@main/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                                     ${mouths ? `<img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/v5-4simpleproblems-dv@main/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                                     ${hats ? `<img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/v5-4simpleproblems-dv@main/mibi-avatars/hats/${hats}" class="absolute inset-0 w-full h-full object-contain">` : ''}
                                  </div>
                             </div>
                         `;
