@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>4SP - LOCAL CLIENT</title>
-    <base href="https://cdn.jsdelivr.net/gh/v5-4simpleproblems/v5@main/logged-in/">
+    <!-- Pointing to the GitHub repo for the content. This allows the client to be a single file while loading assets/pages dynamically. -->
+    <base href="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/logged-in/">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         body { background-color: #040404; color: #c0c0c0; font-family: sans-serif; height: 100vh; margin: 0; display: flex; flex-direction: column; }
         .center-box { margin: auto; padding: 2rem; background: #0d0d0d; border: 1px solid #333; border-radius: 1rem; max-width: 400px; width: 90%; text-align: center; }
-        .input-style { width: 100%; padding: 0.75rem; margin-bottom: 1rem; background: #111; border: 1px solid #333; color: white; border-radius: 0.5rem; text-align: center; letter-spacing: 2px; }
+        .input-style { width: 100%; padding: 0.75rem; margin-bottom: 1rem; background: #111; border: 1px solid #333; color: white; border-radius: 0.5rem; text-align: center; letter-spacing: 2px; text-transform: uppercase; }
         .btn-style { background: #4f46e5; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: bold; cursor: pointer; border: none; width: 100%; }
         .btn-style:hover { background: #4338ca; }
         .error-msg { color: #ef4444; margin-top: 1rem; font-size: 0.875rem; }
@@ -21,24 +22,20 @@
 </head>
 <body>
     <div id="lock-screen" class="center-box">
-        <h1 class="text-2xl font-bold text-white mb-4">4SP v5 Local</h1>
-        <p class="text-gray-400 mb-6 text-sm">Enter your access code to unlock this secure file.</p>
+        <h1 class="text-2xl font-bold text-white mb-4">4SP v5 Client</h1>
+        <p class="text-gray-400 mb-6 text-sm">Enter your 12-character access code.</p>
         <input type="text" id="codeInput" class="input-style" placeholder="XXXX-XXXX-XXXX">
-        <button id="unlockBtn" class="btn-style">Unlock</button>
+        <button id="unlockBtn" class="btn-style">Login</button>
         <p id="lockMessage" class="error-msg"></p>
-        <p id="loading-text" class="hidden">Restoring data...</p>
+        <p id="loading-text" class="hidden">Verifying...</p>
     </div>
 
     <iframe id="app-frame"></iframe>
 
-    <!-- INJECTED DATA PLACEHOLDERS -->
-    <script>
-        window.__ACCESS_CODE__ = "{{ACCESS_CODE}}";
-        window.__USER_DATA__ = {{USER_DATA}};
-    </script>
-
     <script type="module">
-        // Firebase Config included for reference/completeness as requested
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
         const firebaseConfig = {
             apiKey: "AIzaSyAZBKAckVa4IMvJGjcyndZx6Y1XD52lgro",
             authDomain: "project-zirconium.firebaseapp.com",
@@ -49,6 +46,9 @@
             measurementId: "G-1D4F692C1Q"
         };
 
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
         const lockScreen = document.getElementById('lock-screen');
         const appFrame = document.getElementById('app-frame');
         const codeInput = document.getElementById('codeInput');
@@ -56,146 +56,143 @@
         const lockMessage = document.getElementById('lockMessage');
         const loadingText = document.getElementById('loading-text');
 
-        const BASE_URL = 'https://cdn.jsdelivr.net/gh/v5-4simpleproblems/v5@main/logged-in/';
+        const BASE_URL = 'https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/logged-in/';
+        const STORAGE_KEY = 'local_access_code';
 
-        // Check if data is present
-        if (!window.__ACCESS_CODE__ || window.__ACCESS_CODE__ === "{{ACCESS_CODE}}") {
-            lockMessage.innerText = "Error: This file is corrupt or missing embedded data.";
-            unlockBtn.disabled = true;
-            unlockBtn.style.opacity = "0.5";
+        // --- Auto-Login Logic ---
+        async function checkAutoLogin() {
+            const savedCode = localStorage.getItem(STORAGE_KEY);
+            if (savedCode) {
+                loadingText.classList.remove('hidden');
+                unlockBtn.classList.add('hidden');
+                codeInput.classList.add('hidden');
+                
+                try {
+                    const docRef = doc(db, "access_codes", savedCode);
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists() && docSnap.data().active) {
+                        // We assume if we have the code locally, we have claimed it.
+                        // Strictly speaking we should check if claimed=true, which it should be.
+                        launchApp();
+                        return;
+                    } else {
+                        // Code invalid or inactive
+                        localStorage.removeItem(STORAGE_KEY);
+                        resetLockScreen("Session expired. Please enter code again.");
+                    }
+                } catch(e) {
+                    console.error("Auto-login error:", e);
+                    // On offline or error, maybe let them in if we want "offline mode"?
+                    // For now, assume internet required for auth.
+                    resetLockScreen("Connection failed. Retrying...");
+                }
+            }
         }
 
+        function resetLockScreen(msg) {
+            loadingText.classList.add('hidden');
+            unlockBtn.classList.remove('hidden');
+            codeInput.classList.remove('hidden');
+            lockMessage.innerText = msg || "";
+        }
+
+        // --- Unlock Logic ---
         unlockBtn.addEventListener('click', async () => {
-            const code = codeInput.value.trim();
-            if (!code) {
-                lockMessage.innerText = "Please enter a code.";
+            let code = codeInput.value.trim().toUpperCase();
+            // Remove hyphens if present
+            code = code.replace(/-/g, '');
+
+            if (code.length !== 12) {
+                lockMessage.innerText = "Invalid code format (12 characters).";
                 return;
             }
 
-            if (code !== window.__ACCESS_CODE__) {
-                lockMessage.innerText = "Invalid access code.";
-                return;
-            }
-
-            // Code is valid
             lockMessage.innerText = "";
-            unlockBtn.classList.add('hidden');
-            codeInput.classList.add('hidden');
-            loadingText.classList.remove('hidden');
+            unlockBtn.disabled = true;
+            unlockBtn.innerText = "Checking...";
 
             try {
-                await restoreUserData();
-                // Start with dashboard
-                loadPage('dashboard.html');
+                const docRef = doc(db, "access_codes", code);
+                const docSnap = await getDoc(docRef);
+
+                if (!docSnap.exists()) {
+                    throw new Error("Code not found.");
+                }
+
+                const data = docSnap.data();
+
+                if (data.claimed) {
+                    // Check if it's OUR code (maybe we just typed it in again)
+                    if (localStorage.getItem(STORAGE_KEY) === code) {
+                        launchApp();
+                        return;
+                    }
+                    throw new Error("This code is already in use.");
+                }
+
+                if (!data.active) {
+                    throw new Error("Code is inactive.");
+                }
+
+                // Claim it!
+                await updateDoc(docRef, { claimed: true });
+                localStorage.setItem(STORAGE_KEY, code);
+                
+                launchApp();
+
             } catch (e) {
-                lockMessage.innerText = "Failed to restore data: " + e.message;
-                console.error(e);
+                lockMessage.innerText = e.message;
+                unlockBtn.disabled = false;
+                unlockBtn.innerText = "Login";
             }
         });
 
-        async function restoreUserData() {
-            const data = window.__USER_DATA__;
-            if (!data) return;
-
-            // 1. Restore LocalStorage
-            if (data.localStorage) {
-                for (const [key, value] of Object.entries(data.localStorage)) {
-                    localStorage.setItem(key, value);
-                }
-            }
-
-            // 2. Restore IndexedDB
-            if (data.indexedDB) {
-                for (const dbName in data.indexedDB) {
-                    const storesData = data.indexedDB[dbName];
-                    await new Promise(r => {
-                        const req = indexedDB.deleteDatabase(dbName);
-                        req.onsuccess = r; req.onerror = r;
-                    });
-
-                    await new Promise((resolve, reject) => {
-                        const req = indexedDB.open(dbName, 1);
-                        req.onupgradeneeded = (e) => {
-                            const db = e.target.result;
-                            for (const storeName in storesData) {
-                                if (!db.objectStoreNames.contains(storeName)) {
-                                    db.createObjectStore(storeName); 
-                                }
-                            }
-                        };
-                        req.onsuccess = async (e) => {
-                            const db = e.target.result;
-                            const tx = db.transaction(Object.keys(storesData), 'readwrite');
-                            for (const storeName in storesData) {
-                                const store = tx.objectStore(storeName);
-                                for (const item of storesData[storeName]) {
-                                    store.put(item.value, item.key);
-                                }
-                            }
-                            tx.oncomplete = () => {
-                                db.close();
-                                resolve();
-                            };
-                            tx.onerror = (err) => reject(err);
-                        };
-                        req.onerror = reject;
-                    });
-                }
-            }
+        function launchApp() {
+            lockScreen.classList.add('hidden');
+            appFrame.style.display = 'block';
+            loadPage('dashboard.html');
         }
 
-        // Exposed function to load pages
+        // --- Page Loader ---
         window.loadPage = function(pageName) {
-            // Handle relative paths roughly
+            // Normalize path
             if (pageName.startsWith('./')) pageName = pageName.substring(2);
-            if (pageName.startsWith('../')) pageName = pageName.substring(3); // Assuming flattened structure for simplified view
-            
-            // If full URL, strip base
-            if (pageName.startsWith(BASE_URL)) {
-                pageName = pageName.substring(BASE_URL.length);
-            }
+            if (pageName.startsWith('../')) pageName = pageName.substring(3);
+            if (pageName.startsWith(BASE_URL)) pageName = pageName.substring(BASE_URL.length);
 
             const url = BASE_URL + pageName;
             
             fetch(url)
                 .then(res => res.text())
                 .then(html => {
-                    lockScreen.classList.add('hidden');
-                    appFrame.style.display = 'block';
-                    
                     const doc = appFrame.contentWindow.document;
                     doc.open();
                     
                     const baseTag = '<base href="' + BASE_URL + '">';
                     
-                    // Script to intercept clicks and keep them "local" (in the iframe fetch loop)
-                    // Also mock Auth
+                    // Inject script to mock user and handle links
+                    // We generate a "Client User" based on the code hash or just generic
                     const patchScript = `
                         <script>
                             window._LOCAL_MODE = true;
                             
-                            // Mock Firebase Auth User if profile exists
-                            try {
-                                const profile = localStorage.getItem('offline_user_profile');
-                                if (profile) {
-                                    const userData = JSON.parse(profile);
-                                    // Mock enough for the UI to render
-                                    window.currentUser = {
-                                        uid: 'offline-user',
-                                        displayName: userData.username || 'Offline User',
-                                        email: 'offline@local',
-                                        photoURL: userData.customPfp || null,
-                                        providerData: []
-                                    };
-                                }
-                            } catch(e) {}
+                            // Mock User for Navigation
+                            window.currentUser = {
+                                uid: 'client-user',
+                                displayName: 'Client User',
+                                email: 'client@4sp',
+                                photoURL: null,
+                                providerData: []
+                            };
 
+                            // Override link clicks to stay in iframe
                             document.addEventListener('click', e => {
                                 const link = e.target.closest('a');
                                 if (link && link.href) {
                                     e.preventDefault();
                                     const href = link.getAttribute('href');
-                                    // Call parent loader
+                                    // Pass back to parent
                                     window.parent.loadPage(href);
                                 }
                             });
@@ -203,16 +200,18 @@
                     `;
                     
                     let modifiedHtml = html.replace('<head>', '<head>' + baseTag + patchScript);
-                    
                     doc.write(modifiedHtml);
                     doc.close();
                 })
                 .catch(err => {
-                    // If dashboard fails, we show lock screen again? Or alert inside frame?
                     console.error(err);
                     alert("Failed to load page: " + pageName);
                 });
         };
+
+        // Init
+        checkAutoLogin();
+
     </script>
 </body>
 </html>

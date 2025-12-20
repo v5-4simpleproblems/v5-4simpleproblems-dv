@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4SP - GENERATE ACCESS CODE</title>
+    <meta name="description" content="Generate your unique access code for the 4SP Client.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'custom-darkest-gray': '#040404',
+                        'custom-dark-gray': '#111111',
+                        'custom-medium-gray': '#252525',
+                        'custom-light-gray': '#505050',
+                        'custom-lighter-gray': '#808080',
+                        'custom-white-gray': '#c0c0c0',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        :root {
+            --geist-foreground: 192, 192, 192;
+            --geist-background: 7, 7, 7;
+        }
+
+        body {
+            font-family: 'Geist', sans-serif;
+            background-color: rgb(var(--geist-background));
+            color: rgb(var(--geist-foreground));
+            font-weight: 300;
+        }
+
+        h1, h2, h3, .font-bold, .font-semibold, strong, .tracking-tighter {
+            font-weight: 400 !important;
+        }
+        
+        .message-area { min-height: 20px; }
+        .error-message { color: #f87171; }
+        .success-message { color: #4ade80; }
+        
+        .code-display {
+            font-family: monospace;
+            letter-spacing: 0.2em;
+            font-size: 1.5rem;
+            background: #111;
+            border: 1px solid #333;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+    </style>
+</head>
+<body class="bg-custom-darkest-gray text-custom-white-gray min-h-screen flex flex-col items-center justify-center p-4">
+
+    <main class="w-full max-w-md bg-custom-dark-gray p-8 rounded-2xl border border-custom-medium-gray shadow-2xl">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl text-white mb-2 tracking-tighter">Get Access Code</h1>
+            <p class="text-custom-light-gray text-sm">Generate a unique code to unlock your 4SP Client.</p>
+        </div>
+
+        <div id="generatorContainer" class="flex flex-col items-center">
+            <button id="generateBtn" class="w-full p-4 text-lg rounded-xl font-normal ring-1 ring-white/20 text-white bg-indigo-600 hover:bg-indigo-700 transition mb-6">
+                GENERATE CODE
+            </button>
+
+            <div id="resultContainer" class="w-full hidden flex-col items-center animate-fade-in">
+                <div class="code-display" id="codeOutput">XXXX-XXXX-XXXX</div>
+                <button id="copyBtn" class="w-full p-3 text-base rounded-xl font-normal border border-custom-medium-gray text-custom-white-gray hover:bg-custom-medium-gray transition flex items-center justify-center gap-2">
+                    <i class="fa-regular fa-copy"></i> Copy to Clipboard
+                </button>
+                <div id="messageArea" class="message-area mt-4 text-center text-sm"></div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="mt-8 text-custom-light-gray text-xs">
+        &copy; 2025 4simpleproblems.
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        
+        // Configuration from original project
+        const firebaseConfig = {
+            apiKey: "AIzaSyAZBKAckVa4IMvJGjcyndZx6Y1XD52lgro",
+            authDomain: "project-zirconium.firebaseapp.com",
+            projectId: "project-zirconium",
+            storageBucket: "project-zirconium.firebasestorage.app",
+            messagingSenderId: "1096564243475",
+            appId: "1:1096564243475:web:6d0956a70125eeea1ad3e6",
+            measurementId: "G-1D4F692C1Q"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const generateBtn = document.getElementById('generateBtn');
+        const resultContainer = document.getElementById('resultContainer');
+        const codeOutput = document.getElementById('codeOutput');
+        const copyBtn = document.getElementById('copyBtn');
+        const messageArea = document.getElementById('messageArea');
+
+        function generateRandomCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < 12; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result; // 12 chars continuous
+        }
+
+        generateBtn.addEventListener('click', async () => {
+            generateBtn.disabled = true;
+            generateBtn.innerText = "Generating...";
+            
+            const rawCode = generateRandomCode();
+            // Format for display: XXXX-XXXX-XXXX
+            const formattedCode = rawCode.match(/.{1,4}/g).join('-');
+
+            try {
+                // Save to Firestore
+                await setDoc(doc(db, "access_codes", rawCode), {
+                    active: true,
+                    claimed: false,
+                    createdAt: serverTimestamp()
+                });
+
+                codeOutput.innerText = formattedCode;
+                generateBtn.classList.add('hidden');
+                resultContainer.classList.remove('hidden');
+                resultContainer.style.display = 'flex';
+                
+            } catch (e) {
+                console.error("Error creating code:", e);
+                alert("Failed to generate code. Please try again.");
+                generateBtn.disabled = false;
+                generateBtn.innerText = "GENERATE CODE";
+            }
+        });
+
+        copyBtn.addEventListener('click', () => {
+            const code = codeOutput.innerText; // Copy the formatted version or raw? User said "code is 12 chars".
+            // The display is XXXX-XXXX-XXXX (14 chars).
+            // But the user prompt says "code is 12 chars... all uppercase...". 
+            // I'll copy the RAW code (without hyphens) or with?
+            // "input the code they got". Usually easier to read with hyphens.
+            // I'll copy the text exactly as displayed.
+            // And I'll strip hyphens when validating in the client.
+            navigator.clipboard.writeText(code).then(() => {
+                messageArea.innerText = "Copied to clipboard!";
+                messageArea.className = "message-area mt-4 text-center text-sm success-message";
+                setTimeout(() => messageArea.innerText = "", 3000);
+            });
+        });
+
+    </script>
+</body>
+</html>

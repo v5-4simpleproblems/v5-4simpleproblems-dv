@@ -8,12 +8,8 @@
     // 1. DEFINE YOUR SCRIPTS HERE
     // Update this array (and ONLY this array) to manage your application's scripts.
     const scriptsToLoad = [
-      '../ban-enforcer.js',
-      '../url-changer.js',
-      '../panic-key.js',
       '../navigation.js',
-      '../admin_keybinds.js',
-      '../analytics.js'
+      '../analytics.js' 
     ];
 
     // 2. CORE DYNAMIC LOADING FUNCTION
@@ -33,7 +29,8 @@
             };
             script.onerror = () => {
                 console.error(`Failed to load script: ${url}`);
-                reject(new Error(`Loading error for ${url}`));
+                // Resolve anyway so other scripts can continue loading (soft fail)
+                resolve(url); 
             };
 
             // Inject the script into the document's head to start the download
@@ -48,8 +45,6 @@
     Promise.all(loadingPromises)
         .then(() => {
             console.log('--- All application scripts loaded successfully! ---');
-            // OPTIONAL: Place initialization code here that requires ALL scripts to be ready.
-            // Example: if (window.initApp) { window.initApp(); }
         })
         .catch(error => {
             console.error('Loader encountered errors during script loading:', error);

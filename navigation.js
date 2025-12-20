@@ -3,7 +3,7 @@
  * * This is a fully self-contained script to create a dynamic, authentication-aware
  * navigation bar for your website. It handles everything from Firebase initialization
  * to rendering user-specific information. It now includes a horizontally scrollable
- * tab menu loaded from page-identification.json.
+ * tab menu loaded from internal configuration (formerly page-identification.json).
  */
 
 // =========================================================================
@@ -21,14 +21,30 @@ const FIREBASE_CONFIG = {
 // =========================================================================
 
 // --- Configuration ---
-const PAGE_CONFIG_URL = '../page-identification.json';
+// Hardcoded Page Identification Data (Replaces external fetch for single-file portability)
+const PAGE_IDENTIFICATION_DATA = {
+    "dashboard": { "name": "Dashboard", "icon": "fa-solid fa-house-user", "url": "../logged-in/dashboard.html" },
+    "soundboard": { "name": "Soundboard", "icon": "fa-solid fa-volume-up", "url": "../logged-in/soundboard.html" },
+    "notes": { "name": "Notes", "icon": "fa-solid fa-sticky-note", "url": "../logged-in/notes.html" },
+    "dailyphoto": { "name": "Dailyphoto", "icon": "fa-solid fa-image", "url": "../logged-in/dailyphoto.html" },
+    "countdowns": { "name": "Countdowns", "icon": "fa-solid fa-clock", "url": "../logged-in/countdowns.html" },
+    "weather": { "name": "Weather", "icon": "fa-solid fa-cloud-sun", "url": "../logged-in/weather.html" },
+    "dictionary": { "name": "Dictionary", "icon": "fa-solid fa-book", "url": "../logged-in/dictionary.html" },
+    "messenger-v2": { "name": "Messenger", "icon": "fa-solid fa-comments", "url": "../logged-in/messenger-tutorial.html" },
+    "games-4sp": { "name": "Games", "icon": "fa-solid fa-gamepad", "url": "../GAMES/index.html" },
+    "levium": { "name": "Levium", "icon": "fa-solid fa-globe", "url": "../logged-in/levium.html", "adminOnly": true },
+    "securly-tester": { "name": "Securly Tester", "icon": "fa-solid fa-shield-alt", "url": "../logged-in/securly-tester.html" },
+    "settings": { "name": "Settings", "icon": "fa-solid fa-gear", "url": "../logged-in/settings.html" },
+    "analytics": { "name": "Analytics", "icon": "fa-solid fa-chart-line", "url": "../logged-in/analytics.html", "adminOnly": true }
+};
+
 const PRIVILEGED_EMAIL = '4simpleproblems@gmail.com'; 
 const THEME_STORAGE_KEY = 'user-navbar-theme';
 const lightThemeNames = ['Light', 'Lavender', 'Rose Gold', 'Mint', 'Pink']; // Define light theme names
 
 const DEFAULT_THEME = {
-    'name': 'Dark', // <--- ADD THIS LINE
-    'logo-src': '/images/logo.png', 
+    'name': 'Dark',
+    'logo-src': 'https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/images/logo.png', 
     'navbar-bg': '#000000',
     'navbar-border': 'rgb(31 41 55)',
     'avatar-gradient': 'linear-gradient(135deg, #374151 0%, #111827 100%)',
@@ -95,34 +111,37 @@ window.applyTheme = (theme) => {
     if (logoImg) {
         let newLogoSrc;
         if (themeToApply.name === 'Christmas') {
-            newLogoSrc = '/images/logo-christmas.png';
+            newLogoSrc = 'https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/images/logo-christmas.png';
         } else {
             newLogoSrc = themeToApply['logo-src'] || DEFAULT_THEME['logo-src'];
         }
+        
+        // --- CDN Link Logic from test-navbar.html ---
+        if (newLogoSrc === 'https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/images/logo.png' || newLogoSrc === '/images/logo.png') {
+            newLogoSrc = 'https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/logo.png';
+        }
+
         const currentSrc = logoImg.src;
-        const expectedSrc = new URL(newLogoSrc, window.location.origin).href;
-        if (currentSrc !== expectedSrc) {
+        // Simple check for equality might fail due to absolute vs relative, so we use endsWith or just update
+        if (!currentSrc.endsWith(newLogoSrc) && currentSrc !== newLogoSrc) {
             logoImg.src = newLogoSrc;
         }
 
-        // --- NEW: Logo Tinting Logic ---
-const noFilterThemes = ['Dark', 'Light', 'Christmas'];
+        // --- Logo Tinting Logic ---
+        const noFilterThemes = ['Dark', 'Light', 'Christmas'];
 
-if (noFilterThemes.includes(themeToApply.name)) {
-    // Reset styles for themes that don't need tinting
-    logoImg.style.filter = ''; 
-    logoImg.style.transform = '';
-} else {
-    // 1. Get the highlight color from the theme (e.g., the tab text color)
-    // You can choose 'navbar-border' or 'tab-active-text' depending on preference
-    const tintColor = themeToApply['tab-active-text'] || '#ffffff';
+        if (noFilterThemes.includes(themeToApply.name)) {
+            // Reset styles for themes that don't need tinting
+            logoImg.style.filter = ''; 
+            logoImg.style.transform = '';
+        } else {
+            // 1. Get the highlight color from the theme (e.g., the tab text color)
+            const tintColor = themeToApply['tab-active-text'] || '#ffffff';
 
-    // 2. Create a colored shadow 100px to the right, and move the actual image 100px to the left
-    // This hides the white image and shows only the colored shadow
-    logoImg.style.filter = `drop-shadow(100px 0 0 ${tintColor})`;
-    logoImg.style.transform = 'translateX(-100px)';
-}
-// --- END NEW: Logo Tinting Logic ---
+            // 2. Create a colored shadow 100px to the right, and move the actual image 100px to the left
+            logoImg.style.filter = `drop-shadow(100px 0 0 ${tintColor})`;
+            logoImg.style.transform = 'translateX(-100px)';
+        }
     }
 };
 
@@ -177,50 +196,6 @@ let db;
         return '';
     };
 
-    const isTabActive = (tabUrl, aliases) => {
-        const currentPathname = window.location.pathname.toLowerCase();
-        
-        const cleanPath = (path) => {
-            try {
-                // If it's a relative path, resolve it against origin
-                const resolved = new URL(path, window.location.origin).pathname.toLowerCase();
-                // Normalize index.html
-                if (resolved.endsWith('/index.html')) return resolved.substring(0, resolved.lastIndexOf('/')) + '/';
-                if (resolved.length > 1 && resolved.endsWith('/')) return resolved.slice(0, -1);
-                return resolved;
-            } catch (e) {
-                return path; // Fallback for invalid URLs
-            }
-        };
-
-        const currentCanonical = cleanPath(currentPathname);
-        
-        // 1. Check primary URL
-        const tabCanonical = cleanPath(tabUrl);
-        if (currentCanonical === tabCanonical) return true;
-
-        // 2. Check suffix matching (existing logic)
-        const tabPathSuffix = new URL(tabUrl, window.location.origin).pathname.toLowerCase();
-        const tabSuffixClean = tabPathSuffix.startsWith('/') ? tabPathSuffix.substring(1) : tabPathSuffix;
-        // Avoid aggressive suffix matching for root/short paths
-        if (tabSuffixClean.length > 3 && currentPathname.endsWith(tabSuffixClean)) return true;
-
-        // 3. Check Aliases (NEW)
-        if (aliases && Array.isArray(aliases)) {
-            for (const alias of aliases) {
-                const aliasCanonical = cleanPath(alias);
-                if (currentCanonical === aliasCanonical) return true;
-                
-                // Also check alias suffixes if needed, though exact path matching is safer
-                const aliasPathSuffix = new URL(alias, window.location.origin).pathname.toLowerCase();
-                 const aliasSuffixClean = aliasPathSuffix.startsWith('/') ? aliasPathSuffix.substring(1) : aliasPathSuffix;
-                if (aliasSuffixClean.length > 3 && currentPathname.endsWith(aliasSuffixClean)) return true;
-            }
-        }
-
-        return false;
-    };
-
     const run = async () => {
         if (!document.getElementById('navbar-container')) {
             const navbarDiv = document.createElement('div');
@@ -231,7 +206,8 @@ let db;
         injectStyles();
 
         const container = document.getElementById('navbar-container');
-        const logoPath = DEFAULT_THEME['logo-src']; 
+        // Initial setup with default theme
+        const logoPath = 'https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/logo.png'; 
         container.innerHTML = `
             <header class="auth-navbar">
                 <nav>
@@ -252,28 +228,36 @@ let db;
             </header>
         `;
 
-        // --- NEW: Apply Counter Zoom immediately on creation ---
         applyCounterZoom();
 
-        let pages = {};
+        // Use hardcoded pages instead of fetching
+        const pages = PAGE_IDENTIFICATION_DATA;
+
         await loadCSS("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css");
         
         try {
-            const response = await fetch(PAGE_CONFIG_URL);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            pages = await response.json();
-        } catch (error) {
-            console.error("Failed to load page identification config:", error);
-            pages = { 'home': { name: "Home", url: "../index.html", icon: "fa-solid fa-house" } };
-        }
+            if (window._LOCAL_MODE && window.currentUser) {
+                console.log("Local mode detected. Using mock user.");
+                window.applyTheme(DEFAULT_THEME);
+                // Mock auth/db for pin buttons if needed, or just let them fail/mock them
+                auth = { 
+                    signOut: () => console.log("Sign out (Local)"), 
+                    onAuthStateChanged: (cb) => cb(window.currentUser) 
+                };
+                db = { collection: () => ({ doc: () => ({ get: () => Promise.resolve({ exists: false }) }) }) };
+                
+                // Directly render
+                renderNavbar(window.currentUser, {}, pages, false);
+                return;
+            }
 
-        try {
             await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js");
             await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js");
             await loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js");
             initializeApp(pages, FIREBASE_CONFIG);
         } catch (error) {
             console.error("Failed to load core Firebase SDKs:", error);
+            // Render basic navbar even if Firebase fails
             renderNavbar(null, null, pages, false);
         }
     };
@@ -285,14 +269,12 @@ let db;
             body { padding-top: 64px; }
             .auth-navbar {
                 position: fixed; top: 0; left: 0; 
-                /* UPDATED: transform-origin ensures scaling happens from top-left corner */
                 transform-origin: top left;
                 z-index: 1000;
                 background: var(--navbar-bg);
                 border-bottom: 1px solid var(--navbar-border);
                 height: 64px;
                 transition: background-color 0.3s ease, border-color 0.3s ease;
-                /* Width is handled dynamically by applyCounterZoom now */
                 width: 100%; 
             }
             .auth-navbar nav { padding: 0 1rem; height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1rem; position: relative; }
@@ -403,30 +385,14 @@ let db;
         document.head.appendChild(style);
     };
 
-    /**
-     * NEW FUNCTION: applyCounterZoom
-     * This calculates the browser's current zoom level (devicePixelRatio) and applies
-     * an inverse scale transform to the navbar. This forces the navbar to appear the
-     * same physical size regardless of zoom.
-     */
     const applyCounterZoom = () => {
         const navbar = document.querySelector('.auth-navbar');
         if (!navbar) return;
 
-        // Get the current zoom ratio (e.g., 1.25 for 125% zoom)
-        // Default to 1 if undefined
         const dpr = window.devicePixelRatio || 1;
-
-        // Calculate inverse scale (e.g., 0.8 for 125% zoom)
         const scale = 1 / dpr;
 
-        // Apply scale.
-        // We use transform instead of 'zoom' property for better cross-browser support (Firefox)
         navbar.style.transform = `scale(${scale})`;
-        
-        // Compensate Width:
-        // If we scale down to 0.5, the 100% width becomes 50% of screen.
-        // We need to double the width to fill the screen again.
         navbar.style.width = `${dpr * 100}%`;
     };
 
@@ -459,8 +425,8 @@ let db;
         let currentScrollLeft = 0; 
         let hasScrolledToActiveTab = false; 
         let globalClickListenerAdded = false;
-        let authCheckCompleted = false; // <--- NEW FLAG
-        let isRedirecting = false;    // <--- NEW FLAG
+        let authCheckCompleted = false; 
+        let isRedirecting = false;    
 
         const PINNED_PAGE_KEY = 'navbar_pinnedPage';
         const PIN_BUTTON_HIDDEN_KEY = 'navbar_pinButtonHidden';
@@ -468,46 +434,34 @@ let db;
 
         const getCurrentPageKey = () => {
             const currentPathname = window.location.pathname.toLowerCase();
-            let bestMatchKey = null;
-            let longestMatchLength = 0; // Track the length of the matched canonical URL
-
             const cleanPath = (path) => {
                 try {
-                    // If it's a relative path, resolve it against origin
                     const resolved = new URL(path, window.location.origin).pathname.toLowerCase();
-                    // Normalize index.html
                     if (resolved.endsWith('/index.html')) return resolved.substring(0, resolved.lastIndexOf('/')) + '/';
                     if (resolved.length > 1 && resolved.endsWith('/')) return resolved.slice(0, -1);
                     return resolved;
                 } catch (e) {
-                    return path; // Fallback for invalid URLs
+                    return path;
                 }
             };
 
             const currentCanonical = cleanPath(currentPathname);
-            
-            // Collect all matching keys along with their canonical URLs
             const potentialMatches = [];
 
             for (const [key, page] of Object.entries(allPages)) {
                 const tabCanonical = cleanPath(page.url);
                 let isMatch = false;
 
-                // 1. Check primary URL
                 if (currentCanonical === tabCanonical) {
                     isMatch = true;
                 }
 
-                // 2. Check suffix matching (existing logic)
-                // This is less reliable for full path differentiation, but kept for compatibility
                 const tabPathSuffix = new URL(page.url, window.location.origin).pathname.toLowerCase();
                 const tabSuffixClean = tabPathSuffix.startsWith('/') ? tabPathSuffix.substring(1) : tabPathSuffix;
-                // Avoid aggressive suffix matching for root/short paths
                 if (!isMatch && tabSuffixClean.length > 3 && currentPathname.endsWith(tabSuffixClean)) {
                     isMatch = true;
                 }
 
-                // 3. Check Aliases (NEW)
                 if (!isMatch && page.aliases && Array.isArray(page.aliases)) {
                     for (const alias of page.aliases) {
                         const aliasCanonical = cleanPath(alias);
@@ -515,7 +469,6 @@ let db;
                             isMatch = true;
                             break;
                         }
-                        // Also check alias suffixes if needed, though exact path matching is safer
                         const aliasPathSuffix = new URL(alias, window.location.origin).pathname.toLowerCase();
                          const aliasSuffixClean = aliasPathSuffix.startsWith('/') ? aliasPathSuffix.substring(1) : aliasPathSuffix;
                         if (aliasSuffixClean.length > 3 && currentPathname.endsWith(aliasSuffixClean)) {
@@ -530,16 +483,14 @@ let db;
                 }
             }
 
-            // From potential matches, find the one with the longest canonical URL (most specific)
             if (potentialMatches.length > 0) {
                 potentialMatches.sort((a, b) => b.canonicalUrl.length - a.canonicalUrl.length);
                 return potentialMatches[0].key;
             }
 
-            return null; // No match found
+            return null; 
         };
 
-        
         const getPinButtonHtml = () => {
             const pinnedPageKey = localStorage.getItem(PINNED_PAGE_KEY);
             const isPinButtonHidden = localStorage.getItem(PIN_BUTTON_HIDDEN_KEY) === 'true';
@@ -693,10 +644,10 @@ let db;
                     avatarHtml = `
                         <div class="w-full h-full relative overflow-hidden rounded-full" style="background-color: ${bgColor || '#3B82F6'}">
                              <div class="absolute inset-0 w-full h-full" style="transform: translate(${x}%, ${y}%) rotate(${rot}deg) scale(${scale}); transform-origin: center;">
-                                 <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
-                                 ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                                 ${mouths ? `<img src="/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                                 ${hats ? `<img src="/mibi-avatars/hats/${hats}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                                 <img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
+                                 ${eyes ? `<img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                                 ${mouths ? `<img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                                 ${hats ? `<img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/mibi-avatars/hats/${hats}" class="absolute inset-0 w-full h-full object-contain">` : ''}
                              </div>
                         </div>
                     `;
@@ -880,16 +831,18 @@ let db;
             const authControlsWrapper = document.getElementById('auth-controls-wrapper');
             const navbarLogo = document.getElementById('navbar-logo');
 
-            const logoPath = DEFAULT_THEME['logo-src']; 
-            if (navbarLogo) navbarLogo.src = logoPath;
+            const logoPath = 'https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/logo.png'; 
+            if (navbarLogo) {
+               // Only update if needed to avoid flicker
+               if (!navbarLogo.src.includes('4sp-asset-library')) navbarLogo.src = logoPath;
+            }
             
-            // Determine the single active page key first
             const activePageKey = getCurrentPageKey();
 
             const tabsHtml = Object.entries(pages || {})
                 .filter(([, page]) => !(page.adminOnly && !isPrivilegedUser)) 
-                .map(([key, page]) => { // Get key and page from entry
-                    const isActive = (key === activePageKey); // Compare with the single activePageKey
+                .map(([key, page]) => { 
+                    const isActive = (key === activePageKey); 
                     const activeClass = isActive ? 'active' : '';
                     const iconClasses = getIconClass(page.icon);
                     return `<a href="${page.url}" class="nav-tab ${activeClass}"><i class="${iconClasses} mr-2"></i>${page.name}</a>`;
@@ -1102,23 +1055,20 @@ let db;
                 const scrollAmount = tabContainer.offsetWidth * 0.8; 
                 tabContainer.addEventListener('scroll', updateScrollGilders);
                 
-                // --- MODIFIED: RESIZE EVENT ---
-                // We now trigger both glider updates AND the counter-zoom logic
                 window.addEventListener('resize', () => {
                     debouncedUpdateGilders();
-                    applyCounterZoom(); // Re-calculate zoom scale on resize
+                    applyCounterZoom(); 
                 });
-                // --- END MODIFICATION ---
                 
                 if (leftButton) {
                     leftButton.addEventListener('click', () => {
-                        tabContainer.scrollLeft = 0; // Scroll to the beginning
+                        tabContainer.scrollLeft = 0; 
                     });
                 }
                 if (rightButton) {
                     rightButton.addEventListener('click', () => {
                         const maxScroll = tabContainer.scrollWidth - tabContainer.offsetWidth;
-                        tabContainer.scrollLeft = maxScroll; // Scroll to the end
+                        tabContainer.scrollLeft = maxScroll; 
                     });
                 }
             }
@@ -1169,10 +1119,10 @@ let db;
                         newContent = `
                             <div class="w-full h-full relative overflow-hidden rounded-full" style="background-color: ${bgColor || '#3B82F6'}">
                                  <div class="absolute inset-0 w-full h-full" style="transform: translate(${x}%, ${y}%) rotate(${rot}deg) scale(${scale}); transform-origin: center;">
-                                     <img src="/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
-                                     ${eyes ? `<img src="/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                                     ${mouths ? `<img src="/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
-                                     ${hats ? `<img src="/mibi-avatars/hats/${hats}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                                     <img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/mibi-avatars/head.png" class="absolute inset-0 w-full h-full object-contain">
+                                     ${eyes ? `<img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/mibi-avatars/eyes/${eyes}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                                     ${mouths ? `<img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/mibi-avatars/mouths/${mouths}" class="absolute inset-0 w-full h-full object-contain">` : ''}
+                                     ${hats ? `<img src="https://cdn.jsdelivr.net/gh/4simpleproblems-v5/4simpleproblems-v5.github.io@main/mibi-avatars/hats/${hats}" class="absolute inset-0 w-full h-full object-contain">` : ''}
                                  </div>
                             </div>
                         `;
@@ -1219,11 +1169,9 @@ let db;
             let isPrivilegedUser = false;
             let userData = null;
             if (user) {
-                // Check if hardcoded privileged email
                 isPrivilegedUser = user.email === PRIVILEGED_EMAIL;
 
                 try {
-                    // Fetch user data and check admin status in parallel
                     const userDocPromise = db.collection('users').doc(user.uid).get();
                     const adminDocPromise = db.collection('admins').doc(user.uid).get();
 
@@ -1231,7 +1179,6 @@ let db;
                     
                     userData = userDoc.exists ? userDoc.data() : null;
 
-                    // If not already privileged via email, check if they are in the admins collection
                     if (!isPrivilegedUser && adminDoc.exists) {
                         isPrivilegedUser = true;
                     }
@@ -1243,28 +1190,25 @@ let db;
             currentUser = user;
             currentUserData = userData;
 
-            // --- NEW: Apply Theme from Firestore ---
             if (userData && userData.navbarTheme) {
                 window.applyTheme(userData.navbarTheme);
-                // Sync to local storage for future page loads
                 localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(userData.navbarTheme));
             }
-            // ---------------------------------------
 
             currentIsPrivileged = isPrivilegedUser;
             renderNavbar(currentUser, currentUserData, allPages, currentIsPrivileged);
 
-            // Set flag after the first check
             if (!authCheckCompleted) {
                 authCheckCompleted = true;
             }
 
-            // Only redirect if auth check is completed, user is logged out, and we are not already redirecting
-            if (authCheckCompleted && !user && !isRedirecting) {
+            if (authCheckCompleted && !user && !isRedirecting && !window._LOCAL_MODE) {
+                // If we are in "one file" local mode (injected via 4simpleproblems-v5.html), we might have a mock user or no auth requirement.
+                // However, the original code had a redirect. 
+                // We'll keep the redirect but respecting the 'window._LOCAL_MODE' flag if it exists (added in v5 html).
                 const targetUrl = '../index.html'; 
-                
                 console.log(`User logged out. Restricting access and redirecting to ${targetUrl}`);
-                isRedirecting = true; // Set flag to prevent multiple redirects
+                isRedirecting = true; 
                 window.location.href = targetUrl;
             }
         });
