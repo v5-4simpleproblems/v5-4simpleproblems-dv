@@ -18,6 +18,61 @@
         #app-frame { width: 100%; height: 100%; border: none; display: none; flex-grow: 1; }
         .hidden { display: none !important; }
         #loading-text { color: #888; margin-top: 1rem; }
+
+        /* --- Navbar Styles --- */
+        #navbar-container {
+            background: #000000;
+            border-bottom: 1px solid #1f2937;
+            height: 64px;
+            width: 100%;
+            display: none; /* Hidden until unlocked */
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            box-sizing: border-box;
+            flex-shrink: 0;
+        }
+        .navbar-logo { height: 32px; width: auto; }
+        .tab-wrapper { flex-grow: 1; display: flex; align-items: center; position: relative; min-width: 0; margin: 0 1rem; justify-content: center; overflow: hidden; }
+        .tab-scroll-container { 
+            display: flex; align-items: center; gap: 0.5rem; overflow-x: auto; 
+            scrollbar-width: none; white-space: nowrap; max-width: 100%;
+        }
+        .tab-scroll-container::-webkit-scrollbar { display: none; }
+        
+        .nav-tab { 
+            padding: 0.5rem 0.75rem; color: #9ca3af; font-size: 0.875rem; font-weight: 500; 
+            border-radius: 0.5rem; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;
+            border: 1px solid transparent; transition: all 0.2s; cursor: pointer;
+        }
+        .nav-tab:hover { color: #ffffff; background-color: rgba(79, 70, 229, 0.05); }
+        .nav-tab.active { color: #4f46e5; border-color: #4f46e5; background-color: rgba(79, 70, 229, 0.1); }
+        
+        .auth-controls-wrapper { display: flex; align-items: center; gap: 1rem; position: relative; }
+        
+        .icon-btn {
+            width: 40px; height: 40px; border-radius: 50%; border: 1px solid #4b5563; 
+            display: flex; align-items: center; justify-content: center; color: #d1d5db; 
+            cursor: pointer; background: transparent; transition: background 0.2s;
+        }
+        .icon-btn:hover { background-color: #374151; color: white; }
+
+        .auth-menu {
+            position: absolute; right: 0; top: 50px; width: 14rem;
+            background: #000; border: 1px solid #374151; border-radius: 0.75rem;
+            padding: 0.5rem; display: none; flex-direction: column; gap: 0.25rem; z-index: 50;
+        }
+        .auth-menu.open { display: flex; }
+        .auth-menu-item {
+            display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem;
+            color: #d1d5db; border-radius: 0.5rem; text-decoration: none; font-size: 0.875rem;
+            transition: background 0.15s; cursor: pointer;
+        }
+        .auth-menu-item:hover { background-color: #374151; color: white; }
+        .auth-header { padding: 0.5rem; border-bottom: 1px solid #374151; margin-bottom: 0.25rem; }
+        .auth-username { color: white; font-weight: bold; font-size: 0.9rem; }
+        .auth-email { color: #9ca3af; font-size: 0.75rem; }
+
     </style>
 </head>
 <body>
@@ -28,6 +83,42 @@
         <button id="unlockBtn" class="btn-style">Login</button>
         <p id="lockMessage" class="error-msg"></p>
         <p id="loading-text" class="hidden">Verifying...</p>
+    </div>
+
+    <div id="navbar-container">
+        <img src="https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/logo.png" class="navbar-logo" alt="Logo">
+        
+        <div class="tab-wrapper">
+            <div class="tab-scroll-container" id="tabs-container">
+                <!-- Tabs injected here -->
+            </div>
+        </div>
+
+        <div class="auth-controls-wrapper">
+            <!-- Pin Button -->
+            <button id="pin-btn" class="icon-btn" title="Pin this page">
+                <i class="fa-solid fa-thumbtack"></i>
+            </button>
+
+            <!-- Auth Profile -->
+            <div class="relative">
+                <button id="auth-btn" class="icon-btn">
+                    <i class="fa-solid fa-user"></i>
+                </button>
+                <div id="auth-menu" class="auth-menu">
+                    <div class="auth-header">
+                        <div class="auth-username">Client User</div>
+                        <div class="auth-email">local@client</div>
+                    </div>
+                    <a href="#" class="auth-menu-item" onclick="loadPage('settings.html'); return false;">
+                        <i class="fa-solid fa-gear"></i> Settings
+                    </a>
+                    <div class="auth-menu-item text-red-400 hover:text-red-300" id="logout-btn">
+                        <i class="fa-solid fa-right-from-bracket"></i> Log Out
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <iframe id="app-frame"></iframe>
@@ -50,14 +141,93 @@
         const db = getFirestore(app);
 
         const lockScreen = document.getElementById('lock-screen');
+        const navbar = document.getElementById('navbar-container');
         const appFrame = document.getElementById('app-frame');
         const codeInput = document.getElementById('codeInput');
         const unlockBtn = document.getElementById('unlockBtn');
         const lockMessage = document.getElementById('lockMessage');
         const loadingText = document.getElementById('loading-text');
+        
+        // Navbar elements
+        const tabsContainer = document.getElementById('tabs-container');
+        const pinBtn = document.getElementById('pin-btn');
+        const authBtn = document.getElementById('auth-btn');
+        const authMenu = document.getElementById('auth-menu');
+        const logoutBtn = document.getElementById('logout-btn');
 
         const BASE_URL = 'https://cdn.jsdelivr.net/npm/4sp-dv@latest/logged-in/';
         const STORAGE_KEY = 'local_access_code';
+        const PINNED_PAGE_KEY = 'local_pinned_page';
+
+        const PAGE_DATA = {
+            "dashboard": { "name": "Dashboard", "icon": "fa-solid fa-house-user", "url": "dashboard.html" },
+            "soundboard": { "name": "Soundboard", "icon": "fa-solid fa-volume-up", "url": "soundboard.html" },
+            "notes": { "name": "Notes", "icon": "fa-solid fa-sticky-note", "url": "notes.html" },
+            "dailyphoto": { "name": "Dailyphoto", "icon": "fa-solid fa-image", "url": "dailyphoto.html" },
+            "countdowns": { "name": "Countdowns", "icon": "fa-solid fa-clock", "url": "countdowns.html" },
+            "weather": { "name": "Weather", "icon": "fa-solid fa-cloud-sun", "url": "weather.html" },
+            "dictionary": { "name": "Dictionary", "icon": "fa-solid fa-book", "url": "dictionary.html" },
+            "messenger-v2": { "name": "Messenger", "icon": "fa-solid fa-comments", "url": "messenger-tutorial.html" },
+            "settings": { "name": "Settings", "icon": "fa-solid fa-gear", "url": "settings.html" }
+        };
+
+        // --- Navbar Logic ---
+        function renderNavbar(activePageUrl) {
+            tabsContainer.innerHTML = '';
+            
+            // Normalize activePageUrl to match key or url in PAGE_DATA
+            // remove base url if present
+            let currentPath = activePageUrl.replace(BASE_URL, '');
+            
+            Object.values(PAGE_DATA).forEach(page => {
+                const isAuth = page.url === currentPath;
+                const tab = document.createElement('a');
+                tab.className = `nav-tab ${isAuth ? 'active' : ''}`;
+                tab.innerHTML = `<i class="${page.icon}"></i> ${page.name}`;
+                tab.onclick = () => loadPage(page.url);
+                tabsContainer.appendChild(tab);
+            });
+
+            // Update Pin Button State
+            const pinned = localStorage.getItem(PINNED_PAGE_KEY);
+            if (pinned && pinned === currentPath) {
+                pinBtn.style.color = '#4f46e5';
+            } else {
+                pinBtn.style.color = '#d1d5db';
+            }
+        }
+
+        pinBtn.addEventListener('click', () => {
+            const currentFrameSrc = appFrame.contentWindow.location.href;
+            let pageName = currentFrameSrc.replace(BASE_URL, '');
+            // Fallback if currentFrameSrc is about:blank or empty
+            if (!pageName || pageName === 'about:blank') pageName = window.lastLoadedPage || 'dashboard.html';
+
+            const currentPinned = localStorage.getItem(PINNED_PAGE_KEY);
+            
+            if (currentPinned === pageName) {
+                localStorage.removeItem(PINNED_PAGE_KEY); // Unpin
+            } else {
+                localStorage.setItem(PINNED_PAGE_KEY, pageName); // Pin
+            }
+            renderNavbar(pageName);
+        });
+
+        authBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            authMenu.classList.toggle('open');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!authMenu.contains(e.target) && !authBtn.contains(e.target)) {
+                authMenu.classList.remove('open');
+            }
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        });
 
         // --- Auto-Login Logic ---
         async function checkAutoLogin() {
@@ -72,19 +242,14 @@
                     const docSnap = await getDoc(docRef);
 
                     if (docSnap.exists() && docSnap.data().active) {
-                        // We assume if we have the code locally, we have claimed it.
-                        // Strictly speaking we should check if claimed=true, which it should be.
                         launchApp();
                         return;
                     } else {
-                        // Code invalid or inactive
                         localStorage.removeItem(STORAGE_KEY);
                         resetLockScreen("Session expired. Please enter code again.");
                     }
                 } catch(e) {
                     console.error("Auto-login error:", e);
-                    // On offline or error, maybe let them in if we want "offline mode"?
-                    // For now, assume internet required for auth.
                     resetLockScreen("Connection failed. Retrying...");
                 }
             }
@@ -100,7 +265,6 @@
         // --- Unlock Logic ---
         unlockBtn.addEventListener('click', async () => {
             let code = codeInput.value.trim().toUpperCase();
-            // Remove hyphens if present
             code = code.replace(/-/g, '');
 
             if (code.length !== 12) {
@@ -123,7 +287,6 @@
                 const data = docSnap.data();
 
                 if (data.claimed) {
-                    // Check if it's OUR code (maybe we just typed it in again)
                     if (localStorage.getItem(STORAGE_KEY) === code) {
                         launchApp();
                         return;
@@ -135,7 +298,6 @@
                     throw new Error("Code is inactive.");
                 }
 
-                // Claim it!
                 await updateDoc(docRef, { claimed: true });
                 localStorage.setItem(STORAGE_KEY, code);
                 
@@ -150,16 +312,23 @@
 
         function launchApp() {
             lockScreen.classList.add('hidden');
+            navbar.style.display = 'flex'; // Show navbar
             appFrame.style.display = 'block';
-            loadPage('dashboard.html');
+            
+            // Check for pinned page
+            const pinned = localStorage.getItem(PINNED_PAGE_KEY);
+            loadPage(pinned || 'dashboard.html');
         }
 
         // --- Page Loader ---
         window.loadPage = function(pageName) {
-            // Normalize path
             if (pageName.startsWith('./')) pageName = pageName.substring(2);
             if (pageName.startsWith('../')) pageName = pageName.substring(3);
             if (pageName.startsWith(BASE_URL)) pageName = pageName.substring(BASE_URL.length);
+            
+            // Store for pin logic reference
+            window.lastLoadedPage = pageName;
+            renderNavbar(pageName);
 
             const url = BASE_URL + pageName;
             
@@ -171,14 +340,11 @@
                     
                     const baseTag = '<base href="' + BASE_URL + '">';
                     
-                    // Inject script to mock user and handle links
-                    // We generate a "Client User" based on the code hash or just generic
                     const patchScript = `
                         <script>
                             window._LOCAL_MODE = true;
                             window._CURRENT_PAGE_NAME = "${pageName}";
                             
-                            // Mock User for Navigation
                             window.currentUser = {
                                 uid: 'client-user',
                                 displayName: 'Client User',
@@ -187,13 +353,11 @@
                                 providerData: []
                             };
 
-                            // Override link clicks to stay in iframe
                             document.addEventListener('click', e => {
                                 const link = e.target.closest('a');
                                 if (link && link.href) {
                                     e.preventDefault();
                                     const href = link.getAttribute('href');
-                                    // Pass back to parent
                                     window.parent.loadPage(href);
                                 }
                             });
@@ -210,7 +374,6 @@
                 });
         };
 
-        // Init
         checkAutoLogin();
 
     </script>
