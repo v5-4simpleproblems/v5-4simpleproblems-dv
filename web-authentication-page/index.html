@@ -161,22 +161,16 @@
     </footer>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import {
-            getAuth,
-            onAuthStateChanged,
-            signOut,
-            GoogleAuthProvider,
-            GithubAuthProvider,
-            TwitterAuthProvider,
-            OAuthProvider,
-            signInWithPopup
-        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { 
             getFirestore, 
             doc, 
             setDoc, 
-            serverTimestamp 
+            serverTimestamp,
+            query,
+            where,
+            getDocs,
+            limit,
+            orderBy
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         
         const firebaseConfig = {
@@ -203,11 +197,50 @@
         const messageArea = document.getElementById('messageArea');
         const logoutBtn = document.getElementById('logoutBtn');
 
-        onAuthStateChanged(auth, (user) => {
+        const INDIGO_CLASSES = "text-indigo-500 bg-indigo-500/10 border-indigo-500 hover:bg-indigo-500/20";
+        const CYAN_CLASSES = "text-cyan-500 bg-cyan-500/10 border-cyan-500 hover:bg-cyan-500/20";
+
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 unauthView.classList.add('hidden');
                 authView.classList.remove('hidden');
                 userEmailSpan.textContent = user.email;
+
+                // Check for existing code
+                try {
+                    const q = query(
+                        collection(db, "access_codes"), 
+                        where("ownerUid", "==", user.uid),
+                        where("active", "==", true),
+                        orderBy("createdAt", "desc"),
+                        limit(1)
+                    );
+                    const querySnapshot = await getDocs(q);
+
+                    if (!querySnapshot.empty) {
+                        const docData = querySnapshot.docs[0].data();
+                        const docId = querySnapshot.docs[0].id;
+                        const formatted = docId.match(/.{1,4}/g).join('-');
+                        
+                        codeOutput.innerText = formatted;
+                        resultContainer.classList.remove('hidden');
+                        resultContainer.style.display = 'flex';
+                        
+                        // Set Regenerate Style
+                        generateBtn.innerText = "Regenerate Code";
+                        generateBtn.className = `w-full max-w-xs py-2 px-4 text-sm font-medium rounded-xl transition mb-6 ${CYAN_CLASSES}`;
+                        generateBtn.classList.remove('hidden');
+                    } else {
+                        // Default Style
+                        generateBtn.innerText = "Generate Code";
+                        generateBtn.className = `w-full max-w-xs py-2 px-4 text-sm font-medium rounded-xl transition mb-6 ${INDIGO_CLASSES}`;
+                        resultContainer.classList.add('hidden');
+                        generateBtn.classList.remove('hidden');
+                    }
+                } catch (e) {
+                    console.error("Error fetching code:", e);
+                }
+
             } else {
                 unauthView.classList.remove('hidden');
                 authView.classList.add('hidden');
@@ -242,12 +275,26 @@
 
         generateBtn.addEventListener('click', async () => {
             generateBtn.disabled = true;
+            const originalText = generateBtn.innerText;
             generateBtn.innerText = "Generating...";
             
             const rawCode = generateRandomCode();
             const formattedCode = rawCode.match(/.{1,4}/g).join('-');
 
             try {
+                // Deactivate old codes first (optional but cleaner)
+                const q = query(
+                    collection(db, "access_codes"), 
+                    where("ownerUid", "==", auth.currentUser.uid),
+                    where("active", "==", true)
+                );
+                const querySnapshot = await getDocs(q);
+                const batch = writeBatch(db);
+                querySnapshot.forEach((doc) => {
+                    batch.update(doc.ref, { active: false });
+                });
+                await batch.commit();
+
                 await setDoc(doc(db, "access_codes", rawCode), {
                     active: true,
                     claimed: false,
@@ -257,15 +304,21 @@
                 });
 
                 codeOutput.innerText = formattedCode;
-                generateBtn.classList.add('hidden');
+                
+                // Show result
                 resultContainer.classList.remove('hidden');
                 resultContainer.style.display = 'flex';
+                
+                // Switch to Regenerate Style
+                generateBtn.innerText = "Regenerate Code";
+                generateBtn.className = `w-full max-w-xs py-2 px-4 text-sm font-medium rounded-xl transition mb-6 ${CYAN_CLASSES}`;
+                generateBtn.disabled = false;
                 
             } catch (e) {
                 console.error("Error creating code:", e);
                 alert("Failed to generate code.");
                 generateBtn.disabled = false;
-                generateBtn.innerText = "GENERATE CODE";
+                generateBtn.innerText = originalText;
             }
         });
 
