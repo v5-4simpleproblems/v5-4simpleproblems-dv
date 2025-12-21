@@ -1,15 +1,1497 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GAMES</title>
+    <title>4SP - LOCAL CLIENT</title>
+    <!-- Pointing to the GitHub repo for the content. This allows the client to be a single file while loading assets/pages dynamically. -->
+    <base href="https://dv-service-lfs.4simpleproblems.workers.dev/logged-in/">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; }
-        iframe { width: 100%; height: 100%; border: none; }
+        body { background-color: #040404; color: #c0c0c0; font-family: 'Geist', sans-serif; height: 100vh; margin: 0; display: flex; flex-direction: column; }
+        
+        h1, h2, h3, .font-bold, .font-semibold, strong, b, .tracking-widest {
+            font-weight: 400 !important;
+        }
+
+        #app-frame { width: 100%; height: 100%; border: none; display: none; flex-grow: 1; }
+        .hidden { display: none !important; }
+
+        /* --- Navbar Styles --- */
+        #navbar-container {
+            background: var(--navbar-bg, #000000);
+            border-bottom: 1px solid var(--navbar-border, #1f2937);
+            height: 64px;
+            width: 100%;
+            display: none; /* Hidden until unlocked */
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            box-sizing: border-box;
+            flex-shrink: 0;
+            z-index: 60; /* Ensure navbar is above settings */
+            position: relative;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        .navbar-logo { height: 40px; width: auto; transition: filter 0.3s ease; }
+        .tab-wrapper { flex-grow: 1; display: flex; align-items: center; position: relative; min-width: 0; margin: 0 1rem; justify-content: center; overflow: hidden; }
+        .tab-scroll-container { 
+            display: flex; align-items: center; gap: 0.5rem; overflow-x: auto; 
+            scrollbar-width: none; white-space: nowrap; max-width: 100%;
+        }
+        .tab-scroll-container::-webkit-scrollbar { display: none; }
+        
+        .nav-tab { 
+            padding: 0.5rem 1rem; 
+            color: var(--tab-text, #9ca3af); 
+            font-size: 0.875rem; font-weight: 400; 
+            border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;
+            border: 1px solid transparent; transition: all 0.2s; cursor: pointer;
+        }
+        .nav-tab:hover { 
+            color: var(--tab-hover-text, #ffffff); 
+            background-color: var(--tab-hover-bg, rgba(79, 70, 229, 0.05));
+            border-color: var(--tab-hover-border, transparent);
+        }
+        .nav-tab.active { 
+            color: var(--tab-active-text, #4f46e5); 
+            border-color: var(--tab-active-border, #4f46e5); 
+            background-color: var(--tab-active-bg, rgba(79, 70, 229, 0.1)); 
+        }
+        .nav-tab.active:hover {
+            color: var(--tab-active-hover-text, #6366f1);
+            border-color: var(--tab-active-hover-border, #6366f1);
+            background-color: var(--tab-active-hover-bg, rgba(79, 70, 229, 0.15));
+        }
+        
+        .auth-controls-wrapper { display: flex; align-items: center; gap: 1rem; position: relative; }
+        
+        .icon-btn {
+            width: 40px; height: 40px; border-radius: 50%; border: 1px solid #4b5563; 
+            display: flex; align-items: center; justify-content: center; color: #d1d5db; 
+            cursor: pointer; background: transparent; transition: background 0.2s; position: relative;
+        }
+        .icon-btn:hover { background-color: #374151; color: white; }
+
+        .auth-menu, .pin-context-menu {
+            position: absolute; right: 0; top: 50px; width: 14rem;
+            background: var(--menu-bg, #000); 
+            border: 1px solid var(--menu-border, #374151); 
+            border-radius: 0.75rem;
+            padding: 0.5rem; display: none; flex-direction: column; gap: 0.25rem; z-index: 50;
+        }
+        .pin-context-menu { right: auto; left: 0; width: 12rem; }
+        .auth-menu.open, .pin-context-menu.open { display: flex; }
+        
+        .auth-menu-item {
+            display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem;
+            color: var(--menu-text, #d1d5db); 
+            border-radius: 0.5rem; text-decoration: none; font-size: 0.875rem;
+            transition: background 0.15s; cursor: pointer;
+        }
+        .auth-menu-item:hover { 
+            background-color: var(--menu-item-hover-bg, #374151); 
+            color: var(--menu-item-hover-text, white); 
+        }
+        .auth-header { 
+            padding: 0.5rem; 
+            border-bottom: 1px solid var(--menu-divider, #374151); 
+            margin-bottom: 0.25rem; 
+        }
+        .auth-username { color: var(--menu-username-text, white); font-weight: 400; font-size: 0.9rem; }
+        .auth-email { color: var(--menu-email-text, #9ca3af); font-size: 0.75rem; }
+
+        /* --- Settings Page Styles --- */
+        .btn-toolbar-style {
+            background: #00000000;
+            border: 1px solid #333;
+            border-radius: 0.75rem;
+            color: #d1d5db;
+            padding: 0.5rem 1rem;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-toolbar-style:hover {
+            background-color: #000000;
+            border-color: #fff;
+            color: #ffffff;
+        }
+        .btn-toolbar-style.btn-primary-override {
+            justify-content: center;
+            background-color: rgba(79, 70, 229, 0.1);
+            border: 1px solid #4f46e5;
+            color: #4f46e5;
+        }
+        .btn-toolbar-style.btn-primary-override:hover {
+            background-color: rgba(79, 70, 229, 0.15);
+            border-color: #6366f1;
+            color: #6366f1;
+        }
+        .btn-toolbar-style.btn-primary-override-danger {
+            justify-content: center;
+            background-color: rgba(220, 38, 38, 0.1);
+            border: 1px solid #dc2626;
+            color: #dc2626;
+        }
+        .btn-toolbar-style.btn-primary-override-danger:hover {
+            background-color: rgba(220, 38, 38, 0.15);
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+        .settings-tab {
+            width: 100%;
+            justify-content: flex-start;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            color: #9ca3af;
+            background: transparent;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.95rem;
+        }
+        .settings-tab:hover {
+            color: #fff;
+            background: #1a1a1a;
+        }
+        .settings-tab.active {
+            background-color: rgba(79, 70, 229, 0.1);
+            border: 1px solid #4f46e5;
+            color: #4f46e5;
+        }
+        .settings-box { 
+            border: 1px solid #333; 
+            border-radius: 1rem; 
+            background-color: #0d0d0d; 
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .input-text-style {
+            width: 100%; padding: 0.75rem; border: 1px solid #252525; 
+            background-color: #111111; border-radius: 0.5rem; color: #c0c0c0; transition: all 0.2s;
+        }
+        .input-text-style:focus { border-color: #505050; outline: none; }
+        .input-select-style {
+            width: 100%; padding: 0.75rem; border: 1px solid #252525; 
+            background-color: #111111; border-radius: 0.5rem; color: #c0c0c0; transition: all 0.2s;
+        }
+        
+        /* --- Theme Picker Styles --- */
+        #theme-picker-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 1rem;
+            width: 100%;
+        }
+        .theme-button {
+            border: 2px solid var(--tab-active-border, #4f46e5); 
+            background-color: #111; 
+            border-radius: 0.75rem; 
+            padding: 0.75rem; 
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease-out;
+            opacity: 0.7;
+            position: relative;
+        }
+        .theme-button:hover {
+            opacity: 1;
+            border-color: var(--tab-active-hover-border, #6366f1);
+            transform: translateY(-2px);
+        }
+        .theme-button.active {
+            opacity: 1;
+            box-shadow: 0 0 10px var(--tab-active-shadow, rgba(79, 70, 229, 0.3));
+        }
+        .theme-button-name {
+            font-weight: 400;
+            color: #e0e0e0;
+        }
+
+        /* Cropper & Theme Styles */
+        #cropperModal {
+            display: none; position: fixed; z-index: 2050; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.85); justify-content: center; align-items: center; flex-direction: column;
+        }
+        #cropperContent {
+            background-color: #000000; padding: 0; border-radius: 1rem; border: 1px solid #333;
+            display: flex; flex-direction: column; width: 90%; max-width: 600px; overflow: hidden;
+        }
+        #cropperCanvasContainer {
+            position: relative; margin-bottom: 20px; overflow: hidden; max-height: 60vh;
+        }
+        #cropperCanvas { display: block; max-width: 100%; max-height: 60vh; border: 1px dashed rgba(255, 255, 255, 0.3); }
+        
+        .color-palette-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; max-width: 490px; }
+        .color-option { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s; }
+        .color-option:hover { transform: scale(1.1); }
+        .color-option.selected { border-color: white; box-shadow: 0 0 0 2px #4f46e5; }
+        
+        .letterSquare, .colorSquare {
+            width: 30px; height: 30px; margin: 5px; cursor: pointer; display: flex; justify-content: center;
+            align-items: center; border-radius: 50%; border: 2px solid transparent;
+        }
+        .letterSquare:hover, .colorSquare:hover { transform: scale(1.1); }
+        .letterSquare.selected, .colorSquare.selected { border-color: white; box-shadow: 0 0 0 2px #4f46e5; }
+        .letterSquare { background-color: #252525; color: #fff; }
+
     </style>
 </head>
 <body>
-    <iframe src="https://dv-service-lfs.4simpleproblems.workers.dev/4sp-v5.html" allowfullscreen></iframe>
+    <div id="lock-screen" class="w-full h-full flex flex-col items-center justify-center p-4">
+        <div class="max-w-5xl w-full bg-[#040404] flex flex-col md:flex-row border border-[#252525] rounded-3xl overflow-hidden shadow-2xl">
+            <!-- Left: Login -->
+            <div class="flex-1 p-8 flex flex-col justify-center items-center border-b md:border-b-0 md:border-r border-[#252525]">
+                <h2 class="text-3xl text-[#c0c0c0] mb-6 text-center w-full font-light tracking-tighter">4SP v5 Client</h2>
+                <p class="text-[#505050] text-center mb-8 text-sm">Enter your 12-character access code.</p>
+                
+                <input type="text" id="codeInput" class="w-full max-w-xs bg-[#111] border border-[#252525] text-white rounded-xl p-3 text-center tracking-[0.2em] mb-4 outline-none focus:border-indigo-500 transition" placeholder="XXXX-XXXX-XXXX">
+                
+                <button id="unlockBtn" class="w-full max-w-xs py-2 px-4 text-sm font-medium rounded-xl text-indigo-500 bg-indigo-500/10 border border-indigo-500 hover:bg-indigo-500/20 transition mb-4">
+                    Login
+                </button>
+                
+                <p id="lockMessage" class="text-red-400 text-xs mt-2 min-h-[20px] text-center"></p>
+                <p id="loading-text" class="text-gray-500 text-xs mt-2 hidden text-center">Verifying...</p>
+            </div>
+
+            <!-- Right: Info -->
+            <div class="flex-1 p-8 flex flex-col justify-center items-center bg-[#040404]">
+                <h2 class="text-3xl text-[#c0c0c0] mb-6 text-center w-full font-light tracking-tighter">How it works</h2>
+                <p class="text-lg text-[#505050] mb-8 text-center max-w-md font-light leading-relaxed">
+                    This client provides secure, local access to the 4SP suite. Generate a unique code from your web dashboard to log in properly.
+                </p>
+                
+                <a href="https://4sp-organization.github.io/connection.html" target="_blank" class="w-full max-w-xs py-2 px-4 text-sm font-medium rounded-xl text-cyan-500 bg-cyan-500/10 border border-cyan-500 hover:bg-cyan-500/20 transition text-center flex items-center justify-center">
+                    Get Your Code
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div id="navbar-container">
+        <img src="https://dv-service-lfs.4simpleproblems.workers.dev/images/logo.png" id="navbar-logo" class="navbar-logo" alt="Logo">
+        
+        <div class="tab-wrapper">
+            <div class="tab-scroll-container" id="tabs-container">
+                <!-- Tabs injected here -->
+            </div>
+        </div>
+
+        <div class="auth-controls-wrapper">
+            <!-- Pin Button Wrapper -->
+            <div class="relative" id="pin-wrapper">
+                <button id="pin-btn" class="icon-btn" title="Pin this page">
+                    <i class="fa-solid fa-thumbtack"></i>
+                </button>
+                <div id="pin-menu" class="pin-context-menu">
+                    <div class="auth-menu-item" id="repin-btn">
+                        <i class="fa-solid fa-thumbtack w-4"></i> Repin
+                    </div>
+                    <div class="auth-menu-item text-red-400 hover:text-red-300" id="remove-pin-btn">
+                        <i class="fa-solid fa-xmark w-4"></i> Remove Pin
+                    </div>
+                    <div class="auth-menu-item text-red-400 hover:text-red-300" id="hide-pin-btn">
+                        <i class="fa-solid fa-eye-slash w-4"></i> Hide Button
+                    </div>
+                </div>
+            </div>
+
+            <!-- Auth Profile -->
+            <div class="relative">
+                <button id="auth-btn" class="icon-btn">
+                    <i class="fa-solid fa-user"></i>
+                </button>
+                <div id="auth-menu" class="auth-menu">
+                    <div class="auth-header">
+                        <div class="auth-username" id="display-username">Client User</div>
+                        <div class="auth-email" id="display-email">local@client</div>
+                    </div>
+                    <a href="#" class="auth-menu-item" onclick="loadPage('settings.html'); return false;">
+                        <i class="fa-solid fa-gear w-4"></i> Settings
+                    </a>
+                    <div class="auth-menu-item hidden" id="show-pin-menu-item">
+                        <i class="fa-solid fa-eye w-4"></i> Show Pin Button
+                    </div>
+                    <div class="auth-menu-item text-red-400 hover:text-red-300" id="logout-btn">
+                        <i class="fa-solid fa-right-from-bracket w-4"></i> Disconnect
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Overlay (Full Page Style) -->
+    <div id="settings-overlay" class="fixed bottom-0 left-0 right-0 bg-[#040404] z-50 hidden flex flex-col" style="top: 64px;">
+        <header class="flex justify-between items-center p-4 border-b border-[#1a1a1a] bg-[#000]">
+            <h1 class="text-2xl font-bold text-white pl-4">4SP Settings</h1>
+            <button id="close-settings-btn" class="text-gray-400 hover:text-white pr-4">
+                <i class="fa-solid fa-xmark fa-2x"></i>
+            </button>
+        </header>
+
+        <div class="flex flex-grow overflow-hidden">
+            <!-- Sidebar -->
+            <nav class="w-64 border-r border-[#1a1a1a] bg-[#000] p-4 flex flex-col gap-2 overflow-y-auto">
+                <button class="settings-tab active" data-tab="general">
+                    <i class="fa-solid fa-gear w-5"></i> <span>General</span>
+                </button>
+                <button class="settings-tab" data-tab="personalization">
+                    <i class="fa-solid fa-palette w-5"></i> <span>Personalization</span>
+                </button>
+                <button class="settings-tab" data-tab="privacy">
+                    <i class="fa-solid fa-shield-halved w-5"></i> <span>Privacy & Security</span>
+                </button>
+                <button class="settings-tab" data-tab="about">
+                    <i class="fa-solid fa-circle-info w-5"></i> <span>About 4SP</span>
+                </button>
+            </nav>
+
+            <!-- Main Content -->
+            <div id="settings-content" class="flex-grow p-8 overflow-y-auto bg-[#0d0d0d]">
+                <!-- General Tab -->
+                <div id="tab-general" class="settings-section">
+                    <h3 class="text-2xl text-white font-bold mb-6">General Settings</h3>
+                    <div class="mb-6">
+                        <label class="block text-gray-400 text-sm mb-2">Username</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="settings-username-input" class="bg-[#111] border border-[#333] text-white rounded-lg px-4 py-2 w-full max-w-md focus:border-indigo-500 outline-none transition" placeholder="New Username">
+                            <button id="save-username-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition">Save</button>
+                        </div>
+                        <p id="username-msg" class="text-sm mt-2 min-h-[20px]"></p>
+                    </div>
+                </div>
+
+                <!-- Personalization Tab -->
+                <div id="tab-personalization" class="settings-section hidden">
+                    <h3 class="text-2xl text-white font-bold mb-6">Personalization</h3>
+                    
+                    <!-- Profile Picture -->
+                    <div class="mb-8 p-6 bg-[#111] rounded-xl border border-[#252525]">
+                        <h4 class="text-lg text-white font-semibold mb-4">Profile Picture</h4>
+                        <div class="flex items-start gap-6">
+                            <div class="flex flex-col items-center gap-2">
+                                <div id="pfp-preview" class="w-24 h-24 rounded-full bg-gray-700 overflow-hidden border-2 border-[#333] flex items-center justify-center text-3xl font-bold text-white relative">
+                                    <!-- IMG or Initial injected here -->
+                                </div>
+                                <p class="text-xs text-gray-500">Preview</p>
+                            </div>
+                            
+                            <div class="flex-grow">
+                                <div class="flex gap-4 mb-4 border-b border-[#333] pb-4">
+                                    <button class="pfp-mode-btn active px-3 py-1 rounded-lg text-sm text-gray-300 hover:bg-[#222] transition" data-mode="letter">Letter Avatar</button>
+                                    <button class="pfp-mode-btn px-3 py-1 rounded-lg text-sm text-gray-300 hover:bg-[#222] transition" data-mode="upload">Upload Image</button>
+                                </div>
+
+                                <!-- Letter Mode -->
+                                <div id="pfp-letter-options" class="block">
+                                    <div class="grid grid-cols-6 gap-2 mb-4 max-w-xs">
+                                        <!-- Colors injected via JS -->
+                                    </div>
+                                    <button id="save-letter-pfp-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition">Set Letter Avatar</button>
+                                </div>
+
+                                <!-- Upload Mode -->
+                                <div id="pfp-upload-options" class="hidden">
+                                    <input type="file" id="pfp-upload-input" accept="image/*" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#222] file:text-white hover:file:bg-[#333] mb-4"/>
+                                    <p class="text-xs text-gray-500 mb-4">Max size 2MB. Square images work best.</p>
+                                    <button id="save-upload-pfp-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition">Upload & Set</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Theme -->
+                    <div class="p-6 bg-[#111] rounded-xl border border-[#252525]">
+                        <h4 class="text-lg text-white font-semibold mb-4">Theme</h4>
+                        <div id="theme-picker-container">
+                            <!-- Themes injected via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Privacy Tab -->
+                <div id="tab-privacy" class="settings-section hidden">
+                    <h3 class="text-2xl text-white font-bold mb-6">Privacy & Security</h3>
+                    
+                    <div class="p-6 bg-[#111] rounded-xl border border-[#252525]">
+                        <h4 class="text-lg text-white font-semibold mb-2">Panic Key</h4>
+                        <p class="text-sm text-gray-400 mb-4">Pressing this key will immediately redirect you to Google.</p>
+                        
+                        <div class="flex items-center gap-4">
+                            <div class="relative">
+                                <input type="text" id="panic-key-input" maxlength="1" class="w-16 h-16 bg-[#0a0a0a] border border-[#333] rounded-xl text-center text-2xl text-white focus:border-red-500 outline-none uppercase font-mono transition" placeholder="-">
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-sm text-gray-300">Current Key: <span id="current-panic-key" class="text-red-400 font-mono font-bold">NONE</span></span>
+                                <button id="save-panic-key-btn" class="text-xs text-blue-400 hover:text-blue-300 mt-1 text-left">Save Key</button>
+                                <button id="clear-panic-key-btn" class="text-xs text-gray-500 hover:text-gray-400 mt-1 text-left">Clear Key</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- About Tab -->
+                <div id="tab-about" class="settings-section hidden">
+                    <h3 class="text-2xl text-white font-bold mb-6">About 4SP</h3>
+                    <div class="p-6 bg-[#111] rounded-xl border border-[#252525] flex flex-col items-center text-center">
+                        <img src="https://dv-service-lfs.4simpleproblems.workers.dev/images/logo.png" class="h-24 mb-4" alt="Logo">
+                        <h1 class="text-3xl font-bold text-white mb-2">4SimpleProblems</h1>
+                        <p class="text-gray-400 mb-6 max-w-lg">A comprehensive student toolkit and entertainment platform.</p>
+                        
+                        <div class="inline-block bg-[#0a0a0a] border border-[#333] px-4 py-2 rounded-full mb-8">
+                            <span class="text-gray-500 text-sm">Version</span>
+                            <span class="text-indigo-400 font-mono font-bold ml-2">5.0.0 DV</span>
+                        </div>
+                        
+                        <div class="flex gap-4">
+                            <a href="#" class="text-gray-400 hover:text-white transition"><i class="fa-brands fa-github fa-xl"></i></a>
+                            <a href="#" class="text-gray-400 hover:text-white transition"><i class="fa-brands fa-youtube fa-xl"></i></a>
+                            <a href="#" class="text-gray-400 hover:text-white transition"><i class="fa-brands fa-discord fa-xl"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Cropper Modal -->
+    <div id="cropperModal">
+        <div id="cropperContent">
+            <div class="flex justify-between items-center p-6 border-b border-[#333] bg-black">
+                <h3 class="text-2xl font-bold text-white">Adjust Profile Picture</h3>
+                <button id="cancelCropBtn" class="text-gray-400 hover:text-white">
+                     <i class="fa-solid fa-xmark fa-xl"></i>
+                </button>
+            </div>
+            <div class="flex flex-col items-center p-6 bg-[#0a0a0a]">
+                <p class="text-sm text-gray-400 mb-4">Drag to move. Scroll to resize.</p>
+                <div id="cropperCanvasContainer" class="relative mb-6 border border-[#333] rounded-lg overflow-hidden w-full flex justify-center bg-black">
+                    <canvas id="cropperCanvas"></canvas>
+                </div>
+                <div class="flex justify-end w-full">
+                    <button id="submitCropBtn" class="btn-toolbar-style btn-primary-override px-6 py-2 rounded-xl">
+                        <i class="fa-solid fa-check mr-2"></i> Submit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAZBKAckVa4IMvJGjcyndZx6Y1XD52lgro",
+            authDomain: "project-zirconium.firebaseapp.com",
+            projectId: "project-zirconium",
+            storageBucket: "project-zirconium.firebasestorage.app",
+            messagingSenderId: "1096564243475",
+            appId: "1:1096564243475:web:6d0956a70125eeea1ad3e6",
+            measurementId: "G-1D4F692C1Q"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const lockScreen = document.getElementById('lock-screen');
+        const navbar = document.getElementById('navbar-container');
+        let appFrame = document.getElementById('app-frame');
+        const codeInput = document.getElementById('codeInput');
+        const unlockBtn = document.getElementById('unlockBtn');
+        const lockMessage = document.getElementById('lockMessage');
+        const loadingText = document.getElementById('loading-text');
+        
+        // Navbar elements
+        const tabsContainer = document.getElementById('tabs-container');
+        
+        // Pin Elements
+        const pinWrapper = document.getElementById('pin-wrapper');
+        const pinBtn = document.getElementById('pin-btn');
+        const pinMenu = document.getElementById('pin-menu');
+        const repinBtn = document.getElementById('repin-btn');
+        const removePinBtn = document.getElementById('remove-pin-btn');
+        const hidePinBtn = document.getElementById('hide-pin-btn');
+        const showPinMenuItem = document.getElementById('show-pin-menu-item');
+
+        // Auth Elements
+        const authBtn = document.getElementById('auth-btn');
+        const authMenu = document.getElementById('auth-menu');
+        const logoutBtn = document.getElementById('logout-btn');
+        const displayUsername = document.getElementById('display-username');
+        const displayEmail = document.getElementById('display-email');
+
+        const BASE_URL = 'https://dv-service-lfs.4simpleproblems.workers.dev/logged-in/';
+        const STORAGE_KEY = 'local_access_code';
+        const PINNED_PAGE_KEY = 'local_pinned_page';
+        const PIN_HIDDEN_KEY = 'local_pin_hidden';
+        const USER_DATA_KEY = 'local_user_data';
+        const LAST_PAGE_KEY = 'local_last_page';
+
+        const PAGE_DATA = {
+            "dashboard": { "name": "Dashboard", "icon": "fa-solid fa-house-user", "url": "dashboard.html" },
+            "soundboard": { "name": "Soundboard", "icon": "fa-solid fa-volume-up", "url": "soundboard.html" },
+            "notes": { "name": "Notes", "icon": "fa-solid fa-sticky-note", "url": "notes.html" },
+            "dailyphoto": { "name": "Dailyphoto", "icon": "fa-solid fa-image", "url": "dailyphoto.html" },
+            "countdowns": { "name": "Countdowns", "icon": "fa-solid fa-clock", "url": "countdowns.html" },
+            "weather": { "name": "Weather", "icon": "fa-solid fa-cloud-sun", "url": "weather.html" },
+            "dictionary": { "name": "Dictionary", "icon": "fa-solid fa-book", "url": "dictionary.html" },
+            "messenger-v2": { "name": "Messenger", "icon": "fa-solid fa-comments", "url": "messenger-tutorial.html" },
+            "games": { "name": "GAMES", "icon": "fa-solid fa-gamepad", "url": "games.html" },
+            "settings": { "name": "Settings", "icon": "fa-solid fa-gear", "url": "settings.html" }
+        };
+
+        let currentUser = null;
+
+        // --- Navbar Logic ---
+        function renderNavbar(activePageUrl) {
+            const tabsContainerEl = document.getElementById('tabs-container');
+            const pinBtnEl = document.getElementById('pin-btn');
+            const pinWrapperEl = document.getElementById('pin-wrapper');
+            const showPinMenuItemEl = document.getElementById('show-pin-menu-item');
+
+            if (!tabsContainerEl) return;
+            tabsContainerEl.innerHTML = '';
+            
+            let currentPath = activePageUrl.replace(BASE_URL, '');
+            
+            Object.values(PAGE_DATA).forEach(page => {
+                const isAuth = page.url === currentPath;
+                const tab = document.createElement('a');
+                tab.className = `nav-tab ${isAuth ? 'active' : ''}`;
+                tab.innerHTML = `<i class="${page.icon}"></i> ${page.name}`;
+                tab.onclick = () => loadPage(page.url);
+                tabsContainerEl.appendChild(tab);
+            });
+
+            // Update Pin Button State
+            const pinned = localStorage.getItem(PINNED_PAGE_KEY);
+            if (pinBtnEl) {
+                if (pinned && pinned === currentPath) {
+                    pinBtnEl.style.color = '#4f46e5';
+                } else {
+                    pinBtnEl.style.color = '#d1d5db';
+                }
+            }
+
+            // Update Pin Visibility
+            const isHidden = localStorage.getItem(PIN_HIDDEN_KEY) === 'true';
+            if (isHidden) {
+                if (pinWrapperEl) pinWrapperEl.classList.add('hidden');
+                if (showPinMenuItemEl) {
+                    showPinMenuItemEl.classList.remove('hidden');
+                    showPinMenuItemEl.onclick = () => {
+                        localStorage.setItem(PIN_HIDDEN_KEY, 'false');
+                        renderNavbar(activePageUrl);
+                    };
+                }
+            } else {
+                if (pinWrapperEl) pinWrapperEl.classList.remove('hidden');
+                if (showPinMenuItemEl) showPinMenuItemEl.classList.add('hidden');
+            }
+        }
+
+        // --- Pin Logic ---
+        function getCurrentPage() {
+            const currentFrameSrc = appFrame.contentWindow.location.href;
+            let pageName = currentFrameSrc.replace(BASE_URL, '');
+            if (!pageName || pageName === 'about:blank') pageName = window.lastLoadedPage || 'dashboard.html';
+            return pageName;
+        }
+
+        // Pin Button
+        if (pinBtn) {
+            pinBtn.addEventListener('click', () => {
+                const pageName = getCurrentPage();
+                const currentPinned = localStorage.getItem(PINNED_PAGE_KEY);
+                
+                if (currentPinned === pageName) {
+                    localStorage.removeItem(PINNED_PAGE_KEY);
+                } else {
+                    localStorage.setItem(PINNED_PAGE_KEY, pageName);
+                }
+                renderNavbar(pageName);
+            });
+
+            // Context Menu
+            pinBtn.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                if (pinMenu) pinMenu.classList.toggle('open');
+                if (authMenu) authMenu.classList.remove('open');
+            });
+        }
+
+        if (repinBtn) {
+            repinBtn.addEventListener('click', () => {
+                localStorage.setItem(PINNED_PAGE_KEY, getCurrentPage());
+                renderNavbar(getCurrentPage());
+                if (pinMenu) pinMenu.classList.remove('open');
+            });
+        }
+
+        if (removePinBtn) {
+            removePinBtn.addEventListener('click', () => {
+                localStorage.removeItem(PINNED_PAGE_KEY);
+                renderNavbar(getCurrentPage());
+                if (pinMenu) pinMenu.classList.remove('open');
+            });
+        }
+
+        if (hidePinBtn) {
+            hidePinBtn.addEventListener('click', () => {
+                localStorage.setItem(PIN_HIDDEN_KEY, 'true');
+                renderNavbar(getCurrentPage());
+                if (pinMenu) pinMenu.classList.remove('open');
+            });
+        }
+
+        // Auth Menu
+        if (authBtn) {
+            authBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (authMenu) authMenu.classList.toggle('open');
+                if (pinMenu) pinMenu.classList.remove('open');
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (authMenu && authBtn && !authMenu.contains(e.target) && !authBtn.contains(e.target)) {
+                authMenu.classList.remove('open');
+            }
+            if (pinMenu && pinBtn && !pinMenu.contains(e.target) && !pinBtn.contains(e.target)) {
+                pinMenu.classList.remove('open');
+            }
+        });
+
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem(STORAGE_KEY);
+                localStorage.removeItem(USER_DATA_KEY);
+                location.reload();
+            });
+        }
+
+        async function fetchUserData(ownerUid) {
+            try {
+                const userDoc = await getDoc(doc(db, "users", ownerUid));
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    const userData = {
+                        uid: ownerUid,
+                        username: data.username || "User",
+                        email: data.email || "No email"
+                    };
+                    localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
+                    updateUIWithUser(userData);
+                    currentUser = userData; // Set global
+                }
+            } catch (e) {
+                console.error("Error fetching user data:", e);
+            }
+        }
+
+        function updateUIWithUser(userData) {
+            if (!userData) return;
+            displayUsername.textContent = userData.username;
+            displayEmail.textContent = userData.email;
+            
+            // Profile Picture Logic
+            const pfpType = userData.pfpType || 'letter';
+            let pfpHtml = '';
+            
+            if (pfpType === 'custom' && userData.customPfp) {
+                pfpHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover rounded-full" alt="Profile">`;
+            } else {
+                // Letter Avatar
+                const letter = (userData.username || 'U').charAt(0).toUpperCase();
+                const bgColor = userData.pfpLetterBg || '#3B82F6'; // Default blue
+                pfpHtml = `<div class="w-full h-full rounded-full flex items-center justify-center text-white font-bold text-lg" style="background-color: ${bgColor};">${letter}</div>`;
+            }
+            
+            authBtn.innerHTML = pfpHtml;
+            authBtn.style.padding = '0'; // Remove padding to let avatar fill
+            authBtn.style.overflow = 'hidden'; // Ensure roundness
+            authBtn.style.border = '1px solid #4b5563'; // Maintain border
+        }
+
+        // --- Auto-Login Logic ---
+        async function checkAutoLogin() {
+            const savedCode = localStorage.getItem(STORAGE_KEY);
+            if (savedCode) {
+                loadingText.classList.remove('hidden');
+                unlockBtn.classList.add('hidden');
+                codeInput.classList.add('hidden');
+                
+                try {
+                    const docRef = doc(db, "access_codes", savedCode);
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists() && docSnap.data().active) {
+                        const codeData = docSnap.data();
+                        
+                        // Check for cached user data first
+                        let userData = null;
+                        try {
+                            userData = JSON.parse(localStorage.getItem(USER_DATA_KEY));
+                        } catch(e){}
+
+                        if (userData && userData.uid === codeData.ownerUid) {
+                             updateUIWithUser(userData);
+                             currentUser = userData;
+                        } else if (codeData.ownerUid) {
+                            await fetchUserData(codeData.ownerUid);
+                        }
+
+                        launchApp();
+                        return;
+                    } else {
+                        localStorage.removeItem(STORAGE_KEY);
+                        resetLockScreen("Session expired. Please enter code again.");
+                    }
+                } catch(e) {
+                    console.error("Auto-login error:", e);
+                    resetLockScreen("Connection failed. Retrying...");
+                }
+            }
+        }
+
+        function resetLockScreen(msg) {
+            loadingText.classList.add('hidden');
+            unlockBtn.classList.remove('hidden');
+            codeInput.classList.remove('hidden');
+            lockMessage.innerText = msg || "";
+        }
+
+        // --- Unlock Logic ---
+        unlockBtn.addEventListener('click', async () => {
+            let code = codeInput.value.trim().toUpperCase();
+            code = code.replace(/-/g, '');
+
+            if (code.length !== 12) {
+                lockMessage.innerText = "Invalid code format (12 characters).";
+                return;
+            }
+
+            lockMessage.innerText = "";
+            unlockBtn.disabled = true;
+            unlockBtn.innerText = "Checking...";
+
+            try {
+                const docRef = doc(db, "access_codes", code);
+                const docSnap = await getDoc(docRef);
+
+                if (!docSnap.exists()) {
+                    throw new Error("Code not found.");
+                }
+
+                const data = docSnap.data();
+
+                if (data.claimed) {
+                    if (localStorage.getItem(STORAGE_KEY) === code) {
+                        launchApp();
+                        return;
+                    }
+                    throw new Error("This code is already in use.");
+                }
+
+                if (!data.active) {
+                    throw new Error("Code is inactive.");
+                }
+
+                // Claim it!
+                await updateDoc(docRef, { claimed: true });
+                localStorage.setItem(STORAGE_KEY, code);
+                
+                // Fetch User Data immediately
+                if (data.ownerUid) {
+                    await fetchUserData(data.ownerUid);
+                }
+
+                launchApp();
+
+            } catch (e) {
+                lockMessage.innerText = e.message;
+                unlockBtn.disabled = false;
+                unlockBtn.innerText = "Login";
+            }
+        });
+
+        function launchApp() {
+            const lockScreenEl = document.getElementById('lock-screen');
+            const navbarEl = document.getElementById('navbar-container');
+            const appFrameEl = document.getElementById('app-frame');
+
+            if (lockScreenEl) lockScreenEl.classList.add('hidden');
+            if (navbarEl) navbarEl.style.display = 'flex';
+            if (appFrameEl) appFrameEl.style.display = 'block';
+            
+            // Determine start page
+            let startPage = 'dashboard.html';
+            const lastPage = localStorage.getItem(LAST_PAGE_KEY);
+            const pinned = localStorage.getItem(PINNED_PAGE_KEY);
+            
+            // Priority: Last Page > Pinned > Default
+            if (lastPage) {
+                 const isValid = Object.values(PAGE_DATA).some(p => p.url === lastPage);
+                 if (isValid) startPage = lastPage;
+            } else if (pinned) {
+                const isValid = Object.values(PAGE_DATA).some(p => p.url === pinned);
+                if (isValid) startPage = pinned;
+            }
+            
+            loadPage(startPage);
+            
+            // --- Apply Saved Theme on Startup ---
+            try {
+                const savedThemeRaw = localStorage.getItem('user-navbar-theme');
+                if (savedThemeRaw) {
+                    const savedTheme = JSON.parse(savedThemeRaw);
+                    applyTheme(savedTheme);
+                }
+            } catch(e) { console.error("Error applying saved theme:", e); }
+        }
+
+        // --- Page Loader ---
+        window.loadPage = function(pageName) {
+            // Intercept Settings
+            if (pageName === 'settings.html' || pageName === 'settings') {
+                window.lastLoadedPage = 'settings.html';
+                localStorage.setItem(LAST_PAGE_KEY, 'settings.html');
+                renderNavbar(BASE_URL + 'settings.html');
+                openSettings();
+                return;
+            }
+            
+            // Close Settings if open
+            const settingsOverlay = document.getElementById('settings-overlay');
+            if (settingsOverlay) settingsOverlay.classList.add('hidden');
+
+            // Normalize path
+            if (pageName.startsWith('./')) pageName = pageName.substring(2);
+            if (pageName.startsWith('../')) pageName = pageName.substring(3);
+            if (pageName.startsWith(BASE_URL)) pageName = pageName.substring(BASE_URL.length);
+
+            window.lastLoadedPage = pageName;
+            localStorage.setItem(LAST_PAGE_KEY, pageName);
+            renderNavbar(pageName);
+
+            const url = BASE_URL + pageName;
+            
+            fetch(url)
+                .then(res => res.text())
+                .then(html => {
+                    // --- ROBUST CLEANUP: Replace Iframe Element ---
+                    // This stops all audio/video and clears context immediately
+                    const oldFrame = document.getElementById('app-frame'); // Re-query directly
+                    const newFrame = document.createElement('iframe');
+                    newFrame.id = 'app-frame';
+                    
+                    if (oldFrame) {
+                        newFrame.style.cssText = oldFrame.style.cssText; // Copy styles
+                        if (oldFrame.parentNode) {
+                            oldFrame.parentNode.replaceChild(newFrame, oldFrame);
+                        }
+                    } else {
+                        // Fallback: This is critical if oldFrame was missing
+                        newFrame.style.width = '100%';
+                        newFrame.style.height = '100%';
+                        newFrame.style.border = 'none';
+                        newFrame.style.display = 'block';
+                        newFrame.style.flexGrow = '1';
+                        document.body.appendChild(newFrame);
+                    }
+                    
+                    // Update global reference if needed, though we should prefer re-querying
+                    appFrame = newFrame; 
+
+                    const doc = newFrame.contentWindow.document;
+                    doc.open();
+                    
+                    const baseTag = '<base href="' + BASE_URL + '">';
+                    
+                    const patchScript = `
+                        <script>
+                            window._LOCAL_MODE = true;
+                            window._CURRENT_PAGE_NAME = "${pageName}";
+                            
+                            window.currentUser = {
+                                uid: '${currentUser ? currentUser.uid : "client-user"}',
+                                displayName: '${currentUser ? currentUser.username : "Client User"}',
+                                email: '${currentUser ? currentUser.email : "local@client"}',
+                                photoURL: null,
+                                providerData: []
+                            };
+
+                            // --- Parent Communication ---
+                            window.openSettings = function() {
+                                window.parent.openSettings();
+                            };
+
+                            document.addEventListener('click', e => {
+                                const link = e.target.closest('a');
+                                if (link && link.href) {
+                                    const href = link.getAttribute('href');
+                                    // Check if it's settings
+                                    if (href.includes('settings.html') || href === '#settings') {
+                                        e.preventDefault();
+                                        window.parent.openSettings();
+                                        return;
+                                    }
+                                    
+                                    e.preventDefault();
+                                    window.parent.loadPage(href);
+                                }
+                            });
+                        <\/script>
+                    `;
+                    
+                    let modifiedHtml = html.replace('<head>', '<head>' + baseTag + patchScript);
+                    doc.write(modifiedHtml);
+                    doc.close();
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Failed to load page: " + pageName);
+                });
+        };
+
+        // --- Settings Logic ---
+        const settingsOverlay = document.getElementById('settings-overlay');
+        const closeSettingsBtn = document.getElementById('close-settings-btn');
+        const settingsTabs = document.querySelectorAll('.settings-tab');
+        const settingsSections = document.querySelectorAll('.settings-section');
+        
+        window.openSettings = function() {
+            settingsOverlay.classList.remove('hidden');
+            loadSettingsData();
+        };
+        
+        function closeSettings() {
+            settingsOverlay.classList.add('hidden');
+        }
+        
+        closeSettingsBtn.addEventListener('click', closeSettings);
+        
+        // Tab Switching
+        settingsTabs.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update buttons
+                settingsTabs.forEach(b => {
+                    b.classList.remove('active', 'text-white', 'bg-[#1a1a1a]'); 
+                    b.classList.add('text-gray-300'); 
+                });
+                btn.classList.add('active', 'text-white', 'bg-[#1a1a1a]');
+                btn.classList.remove('text-gray-300');
+                
+                // Show Content
+                const tabId = btn.dataset.tab;
+                settingsSections.forEach(sec => {
+                    if (sec.id === `tab-${tabId}`) sec.classList.remove('hidden');
+                    else sec.classList.add('hidden');
+                });
+            });
+        });
+
+        // --- Settings Data & Actions ---
+        
+        // --- 1. General: Username ---
+        const settingsUsernameInput = document.getElementById('settings-username-input');
+        const saveUsernameBtn = document.getElementById('save-username-btn');
+        const usernameMsg = document.getElementById('username-msg');
+        
+        async function checkProfanity(text) {
+            try {
+                const res = await fetch(`https://www.purgomalum.com/service/containsprofanity?text=${encodeURIComponent(text)}`);
+                return (await res.text()) === 'true';
+            } catch { return false; }
+        }
+
+        saveUsernameBtn.addEventListener('click', async () => {
+            if (!currentUser) return;
+            const newName = settingsUsernameInput.value.trim();
+            usernameMsg.innerText = "Checking...";
+            usernameMsg.className = "text-gray-500 text-xs mt-2 min-h-[20px]";
+            
+            if (newName.length < 3 || newName.length > 20) {
+                usernameMsg.innerText = "Username must be 3-20 characters.";
+                usernameMsg.className = "text-red-400 text-xs mt-2 min-h-[20px]";
+                return;
+            }
+            
+            if (await checkProfanity(newName)) {
+                usernameMsg.innerText = "Username not allowed.";
+                usernameMsg.className = "text-red-400 text-xs mt-2 min-h-[20px]";
+                return;
+            }
+            
+            try {
+                // Check if taken
+                const q = query(collection(db, "users"), where("username", "==", newName));
+                const snap = await getDocs(q);
+                if (!snap.empty && snap.docs[0].id !== currentUser.uid) {
+                    usernameMsg.innerText = "Username taken.";
+                    usernameMsg.className = "text-red-400 text-xs mt-2 min-h-[20px]";
+                    return;
+                }
+                
+                // Save
+                await updateDoc(doc(db, "users", currentUser.uid), { username: newName });
+                currentUser.username = newName;
+                localStorage.setItem(USER_DATA_KEY, JSON.stringify(currentUser));
+                updateUIWithUser(currentUser);
+                usernameMsg.innerText = "Saved!";
+                usernameMsg.className = "text-green-400 text-xs mt-2 min-h-[20px]";
+                
+            } catch (e) {
+                console.error(e);
+                usernameMsg.innerText = "Error saving.";
+                usernameMsg.className = "text-red-400 text-xs mt-2 min-h-[20px]";
+            }
+        });
+
+        // --- 2. Personalization ---
+        // Letter Avatar Setup
+        const letterColors = ['EF4444', 'F97316', 'F59E0B', '84CC16', '10B981', '06B6D4', '3B82F6', '6366F1', '8B5CF6', 'EC4899', '6B7280'];
+        const pfpModeBtns = document.querySelectorAll('.pfp-mode-btn');
+        const pfpLetterOptions = document.getElementById('pfp-letter-options');
+        const pfpUploadOptions = document.getElementById('pfp-upload-options');
+        const pfpPreview = document.getElementById('pfp-preview');
+        const saveLetterPfpBtn = document.getElementById('save-letter-pfp-btn');
+        
+        let pfpState = { mode: 'letter', letterColor: '#3B82F6' };
+
+        pfpModeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                pfpModeBtns.forEach(b => b.classList.remove('active', 'bg-[#222]'));
+                btn.classList.add('active', 'bg-[#222]');
+                
+                const mode = btn.dataset.mode;
+                pfpState.mode = mode;
+                
+                if (mode === 'letter') {
+                    pfpLetterOptions.classList.remove('hidden');
+                    pfpUploadOptions.classList.add('hidden');
+                    updatePfpPreview();
+                } else {
+                    pfpLetterOptions.classList.add('hidden');
+                    pfpUploadOptions.classList.remove('hidden');
+                }
+            });
+        });
+        
+        // Render Color Grid
+        const gridContainer = pfpLetterOptions.querySelector('.grid');
+        gridContainer.innerHTML = ''; // Clear prev to avoid dups on re-run
+        letterColors.forEach(color => {
+            const div = document.createElement('div');
+            div.className = 'w-8 h-8 rounded-full cursor-pointer hover:scale-110 transition border-2 border-transparent';
+            div.style.backgroundColor = '#' + color;
+            div.onclick = () => {
+                pfpState.letterColor = '#' + color;
+                updatePfpPreview();
+            };
+            gridContainer.appendChild(div);
+        });
+
+        function updatePfpPreview() {
+            if (pfpState.mode === 'letter') {
+                const initial = currentUser ? (currentUser.username || "U").charAt(0).toUpperCase() : "U";
+                pfpPreview.style.backgroundImage = 'none';
+                pfpPreview.style.backgroundColor = pfpState.letterColor;
+                pfpPreview.innerText = initial;
+            }
+        }
+        
+        saveLetterPfpBtn.addEventListener('click', async () => {
+            if (!currentUser) return;
+            saveLetterPfpBtn.innerText = "Saving...";
+            try {
+                await updateDoc(doc(db, "users", currentUser.uid), {
+                    pfpType: 'letter',
+                    pfpLetterBg: pfpState.letterColor,
+                    letterAvatarColor: pfpState.letterColor // Legacy support
+                });
+                // Update local logic if needed
+                currentUser.pfpType = 'letter';
+                currentUser.pfpLetterBg = pfpState.letterColor;
+                localStorage.setItem(USER_DATA_KEY, JSON.stringify(currentUser));
+                saveLetterPfpBtn.innerText = "Saved!";
+                setTimeout(() => saveLetterPfpBtn.innerText = "Set Letter Avatar", 2000);
+            } catch(e) {
+                console.error(e);
+                saveLetterPfpBtn.innerText = "Error";
+            }
+        });
+
+        // --- CROPPER LOGIC ---
+        const pfpUploadInput = document.getElementById('pfp-upload-input');
+        const saveUploadPfpBtn = document.getElementById('save-upload-pfp-btn');
+        const cropperModal = document.getElementById('cropperModal');
+        const cropperCanvas = document.getElementById('cropperCanvas');
+        const cancelCropBtn = document.getElementById('cancelCropBtn');
+        const submitCropBtn = document.getElementById('submitCropBtn');
+        const ctx = cropperCanvas.getContext('2d');
+
+        let cropperImage = null;
+        let cropState = { x: 0, y: 0, radius: 100 };
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+
+        pfpUploadInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (file.size > 2 * 1024 * 1024) {
+                alert('File is too large (max 2MB).');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                cropperImage = new Image();
+                cropperImage.onload = () => {
+                    // Setup canvas with fixed height for consistency
+                    const fixedHeight = 400;
+                    const scale = fixedHeight / cropperImage.height;
+                    cropperCanvas.height = fixedHeight;
+                    cropperCanvas.width = cropperImage.width * scale;
+                    
+                    // Initial crop state: center, 1/3 min dim
+                    cropState = {
+                        x: cropperCanvas.width / 2,
+                        y: cropperCanvas.height / 2,
+                        radius: Math.min(cropperCanvas.width, cropperCanvas.height) / 3
+                    };
+                    
+                    cropperModal.style.display = 'flex';
+                    requestAnimationFrame(drawCropper);
+                };
+                cropperImage.src = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        const drawCropper = () => {
+            if (!cropperImage) return;
+            const w = cropperCanvas.width;
+            const h = cropperCanvas.height;
+            ctx.clearRect(0, 0, w, h);
+            
+            // Draw image filling canvas
+            ctx.drawImage(cropperImage, 0, 0, w, h);
+            
+            // Draw overlay
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.beginPath();
+            ctx.rect(0, 0, w, h);
+            // Cut hole
+            ctx.arc(cropState.x, cropState.y, cropState.radius, 0, 2 * Math.PI, true);
+            ctx.fill();
+            
+            // Draw dashed border
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 4]); // Dashed pattern
+            ctx.beginPath();
+            ctx.arc(cropState.x, cropState.y, cropState.radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset
+        };
+
+        const handleStart = (x, y) => {
+            const dx = x - cropState.x;
+            const dy = y - cropState.y;
+            if (dx*dx + dy*dy < cropState.radius * cropState.radius) {
+                isDragging = true;
+                dragStart = { x, y };
+            }
+        };
+        
+        const handleMove = (x, y) => {
+            if (isDragging) {
+                const dx = x - dragStart.x;
+                const dy = y - dragStart.y;
+                
+                let newX = cropState.x + dx;
+                let newY = cropState.y + dy;
+                
+                const r = cropState.radius;
+                const w = cropperCanvas.width;
+                const h = cropperCanvas.height;
+                
+                newX = Math.max(r, Math.min(newX, w - r));
+                newY = Math.max(r, Math.min(newY, h - r));
+                
+                cropState.x = newX;
+                cropState.y = newY;
+                
+                dragStart = { x, y };
+                requestAnimationFrame(drawCropper);
+            }
+        };
+
+        const handleEnd = () => { isDragging = false; };
+        
+        const handleScroll = (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -5 : 5;
+            let newRadius = cropState.radius + delta;
+            const w = cropperCanvas.width;
+            const h = cropperCanvas.height;
+            const maxPossibleRadius = Math.min(w, h) / 2;
+            newRadius = Math.max(20, Math.min(newRadius, maxPossibleRadius));
+            const minX = newRadius;
+            const maxX = w - newRadius;
+            const minY = newRadius;
+            const maxY = h - newRadius;
+            cropState.x = Math.max(minX, Math.min(cropState.x, maxX));
+            cropState.y = Math.max(minY, Math.min(cropState.y, maxY));
+            cropState.radius = newRadius;
+            requestAnimationFrame(drawCropper);
+        };
+
+        cropperCanvas.addEventListener('mousedown', e => handleStart(e.offsetX, e.offsetY));
+        cropperCanvas.addEventListener('mousemove', e => handleMove(e.offsetX, e.offsetY));
+        cropperCanvas.addEventListener('mouseup', handleEnd);
+        cropperCanvas.addEventListener('mouseleave', handleEnd);
+        cropperCanvas.addEventListener('wheel', handleScroll);
+        
+        cancelCropBtn.addEventListener('click', () => {
+            cropperModal.style.display = 'none';
+            pfpUploadInput.value = ''; 
+        });
+
+        submitCropBtn.addEventListener('click', async () => {
+            const tempCanvas = document.createElement('canvas');
+            const size = 128; // Output size
+            tempCanvas.width = size;
+            tempCanvas.height = size;
+            const tCtx = tempCanvas.getContext('2d');
+            
+            const scale = cropperCanvas.height / cropperImage.height;
+            const sourceX = (cropState.x - cropState.radius) / scale;
+            const sourceY = (cropState.y - cropState.radius) / scale;
+            const sourceSize = (cropState.radius * 2) / scale;
+            
+            tCtx.drawImage(cropperImage, sourceX, sourceY, sourceSize, sourceSize, 0, 0, size, size);
+            const base64 = tempCanvas.toDataURL('image/jpeg', 0.8);
+            
+            // Save to Firestore
+            try {
+                submitCropBtn.disabled = true;
+                submitCropBtn.textContent = "Saving...";
+                await updateDoc(doc(db, "users", currentUser.uid), { 
+                    customPfp: base64,
+                    pfpType: 'custom'
+                });
+                
+                currentUser.customPfp = base64;
+                currentUser.pfpType = 'custom';
+                localStorage.setItem(USER_DATA_KEY, JSON.stringify(currentUser));
+                
+                // Update UI
+                pfpPreview.innerText = "";
+                pfpPreview.style.backgroundImage = `url('${base64}')`;
+                pfpPreview.style.backgroundColor = "transparent";
+                pfpPreview.style.backgroundSize = "cover";
+                
+                cropperModal.style.display = 'none';
+                saveUploadPfpBtn.innerText = "Saved!"; // Feedback on the main btn too
+            } catch (e) {
+                console.error(e);
+                alert('Failed to save image.');
+            } finally {
+                submitCropBtn.disabled = false;
+                submitCropBtn.innerHTML = '<i class="fa-solid fa-check mr-2"></i> Submit';
+            }
+        });
+        
+        saveUploadPfpBtn.addEventListener('click', () => {
+             // Just triggers the file input again if clicked after logic
+             pfpUploadInput.click();
+        });
+
+
+        // Theme Logic
+        const themeGrid = document.getElementById('theme-picker-container');
+        
+        async function loadThemes() {
+            try {
+                const res = await fetch('https://dv-service-lfs.4simpleproblems.workers.dev/themes.json'); 
+                if (!res.ok) return;
+                let themes = await res.json();
+                
+                // --- Sorting Logic from settings.js ---
+                const orderedThemeNames = ['Dark', 'Light', 'Christmas'];
+                const sortedThemes = [];
+
+                orderedThemeNames.forEach(name => {
+                    const theme = themes.find(t => t.name === name);
+                    if (theme) {
+                        sortedThemes.push(theme);
+                        themes = themes.filter(t => t.name !== name);
+                    }
+                });
+
+                const colorMap = {
+                    'Crimson': 1, 'Fire': 1, 'Orange': 2, 'Sunset': 2, 'Rust': 2, 'Ember': 2, 'Copper': 2,
+                    'Gold': 3, 'Green': 4, 'Forest': 4, 'Matrix': 4, 'Mint': 5, 'Ocean': 6, 'Deep Blue': 6,
+                    'Purple': 7, 'Royal': 7, 'Haze': 7, 'Lavender': 7, 'Pink': 8, 'Coral': 8, 'Rose Gold': 8,
+                    'Clanker': 9, 'Monochrome': 9, 'Silver': 9, 'Slate': 9
+                };
+                
+                const getThemeType = (t) => (t['logo-src'] && t['logo-src'].includes('logo-dark.png')) ? 1 : 0;
+
+                themes.sort((a, b) => {
+                    const colorA = colorMap[a.name] || 100;
+                    const colorB = colorMap[b.name] || 100;
+                    if (colorA !== colorB) return colorA - colorB;
+                    const typeA = getThemeType(a);
+                    const typeB = getThemeType(b);
+                    if (typeA !== typeB) return typeA - typeB;
+                    return a.name.localeCompare(b.name);
+                });
+
+                themes = [...sortedThemes, ...themes];
+                // --- End Sorting Logic ---
+
+                const savedThemeRaw = localStorage.getItem('user-navbar-theme');
+                let savedTheme = null;
+                try { if(savedThemeRaw) savedTheme = JSON.parse(savedThemeRaw); } catch(e){}
+
+                themeGrid.innerHTML = '';
+                themes.forEach(theme => {
+                    const isActive = savedTheme && savedTheme.name === theme.name;
+                    const previewBg = theme['navbar-bg'] || '#000000';
+                    const previewText = theme['navbar-text'] || '#c0c0c0';
+                    const previewBorder = theme['tab-active-border'] || '#4f46e5';
+
+                    const btn = document.createElement('button');
+                    btn.className = `theme-button ${isActive ? 'active' : ''}`;
+                    btn.style.backgroundColor = previewBg;
+                    btn.style.borderColor = previewBorder;
+                    btn.innerHTML = `<div class="theme-button-name" style="color: ${previewText};">${theme.name}</div>`;
+                    
+                    btn.onclick = () => {
+                        applyTheme(theme);
+                        document.querySelectorAll('.theme-button').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                    };
+                    themeGrid.appendChild(btn);
+                });
+            } catch(e) { console.error("Themes error", e); }
+        }
+        
+        const lightThemeNames = ['Light', 'Lavender', 'Rose Gold', 'Mint', 'Pink'];
+
+        function applyTheme(theme) {
+            const root = document.documentElement;
+            
+            // --- Logo Path Modification ---
+            let logoSrc;
+            if (lightThemeNames.includes(theme.name)) {
+                logoSrc = 'https://dv-service-lfs.4simpleproblems.workers.dev/images/logo-dark.png'; 
+            } else if (theme.name === 'Christmas') {
+                logoSrc = 'https://dv-service-lfs.4simpleproblems.workers.dev/images/logo-christmas.png';
+            } else {
+                logoSrc = 'https://dv-service-lfs.4simpleproblems.workers.dev/images/logo.png';
+            }
+
+            // Apply CSS Variables
+            for (const [key, value] of Object.entries(theme)) {
+                if (key !== 'logo-src' && key !== 'name') {
+                    root.style.setProperty(`--${key}`, value);
+                }
+            }
+
+            // Apply Logo & Tinting
+            const logoImg = document.getElementById('navbar-logo');
+            if (logoImg) {
+                // Update Source (Use absolute path comparison or specific logic)
+                // We just set it. Browser handles cache.
+                // Note: The original navigation.js checked src endsWith to avoid reload flicker, but simple assignment is okay.
+                if (!logoImg.src.includes(logoSrc)) {
+                     logoImg.src = logoSrc;
+                }
+
+                // Apply Tinting
+                const noFilterThemes = ['Dark', 'Light', 'Christmas'];
+                if (noFilterThemes.includes(theme.name)) {
+                    logoImg.style.filter = ''; 
+                    logoImg.style.transform = '';
+                } else {
+                    const tintColor = theme['tab-active-text'] || '#ffffff';
+                    // The original navigation.js used this trick for SVG coloring via filter
+                    logoImg.style.filter = `drop-shadow(100px 0 0 ${tintColor})`;
+                    logoImg.style.transform = 'translateX(-100px)';
+                }
+            }
+
+            // Save to local storage for persistence on reload
+            localStorage.setItem('user-navbar-theme', JSON.stringify(theme));
+            
+            // Also update user doc if logged in
+            if (currentUser) {
+                updateDoc(doc(db, "users", currentUser.uid), { navbarTheme: theme }).catch(console.error);
+            }
+        }
+
+        // --- 3. Privacy: Panic Key ---
+        const panicKeyInput = document.getElementById('panic-key-input');
+        const currentPanicKeyDisplay = document.getElementById('current-panic-key');
+        const savePanicKeyBtn = document.getElementById('save-panic-key-btn');
+        const clearPanicKeyBtn = document.getElementById('clear-panic-key-btn');
+        
+        // Load Panic Key
+        const PANIC_KEY_STORAGE = 'local_panic_key';
+        let currentPanicKey = localStorage.getItem(PANIC_KEY_STORAGE);
+        if (currentPanicKey) currentPanicKeyDisplay.innerText = currentPanicKey;
+        
+        savePanicKeyBtn.addEventListener('click', () => {
+            const key = panicKeyInput.value.trim().toUpperCase();
+            if (key && key.length === 1) {
+                localStorage.setItem(PANIC_KEY_STORAGE, key);
+                currentPanicKey = key;
+                currentPanicKeyDisplay.innerText = key;
+                panicKeyInput.value = '';
+            }
+        });
+        
+        clearPanicKeyBtn.addEventListener('click', () => {
+            localStorage.removeItem(PANIC_KEY_STORAGE);
+            currentPanicKey = null;
+            currentPanicKeyDisplay.innerText = "NONE";
+        });
+        
+        // Global Panic Listener
+        window.addEventListener('keydown', (e) => {
+            if (currentPanicKey && e.key.toUpperCase() === currentPanicKey && !e.ctrlKey && !e.altKey && !e.metaKey && e.target.tagName !== 'INPUT') {
+                window.location.href = "https://google.com";
+            }
+        });
+
+        // --- Helper: Load Data into Settings ---
+        function loadSettingsData() {
+            if (currentUser) {
+                settingsUsernameInput.value = currentUser.username || "";
+                pfpState.letterColor = currentUser.pfpLetterBg || '#3B82F6';
+                updatePfpPreview();
+            }
+            loadThemes();
+        }
+
+        checkAutoLogin();
+
+    </script>
 </body>
 </html>
