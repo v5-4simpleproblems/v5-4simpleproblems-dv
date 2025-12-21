@@ -30,7 +30,7 @@ const PAGE_IDENTIFICATION_DATA = {
     "weather": { "name": "Weather", "icon": "fa-solid fa-cloud-sun", "url": "../logged-in/weather.html" },
     "dictionary": { "name": "Dictionary", "icon": "fa-solid fa-book", "url": "../logged-in/dictionary.html" },
     "messenger-v2": { "name": "Messenger", "icon": "fa-solid fa-comments", "url": "../logged-in/messenger-tutorial.html" },
-    "games-4sp": { "name": "Games", "icon": "fa-solid fa-gamepad", "url": "../logged-in/games.html" },
+    "games-4sp": { "name": "Games", "icon": "fa-solid fa-gamepad", "url": "../GAMES/index.html" },
     "levium": { "name": "Levium", "icon": "fa-solid fa-globe", "url": "../logged-in/levium.html", "adminOnly": true },
     "securly-tester": { "name": "Securly Tester", "icon": "fa-solid fa-shield-alt", "url": "../logged-in/securly-tester.html" },
     "settings": { "name": "Settings", "icon": "fa-solid fa-gear", "url": "#settings" },
