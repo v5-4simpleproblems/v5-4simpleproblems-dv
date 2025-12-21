@@ -22,8 +22,8 @@
 
         /* --- Navbar Styles --- */
         #navbar-container {
-            background: #000000;
-            border-bottom: 1px solid #1f2937;
+            background: var(--navbar-bg, #000000);
+            border-bottom: 1px solid var(--navbar-border, #1f2937);
             height: 64px;
             width: 100%;
             display: none; /* Hidden until unlocked */
@@ -34,8 +34,9 @@
             flex-shrink: 0;
             z-index: 60; /* Ensure navbar is above settings */
             position: relative;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
-        .navbar-logo { height: 40px; width: auto; }
+        .navbar-logo { height: 40px; width: auto; transition: filter 0.3s ease; }
         .tab-wrapper { flex-grow: 1; display: flex; align-items: center; position: relative; min-width: 0; margin: 0 1rem; justify-content: center; overflow: hidden; }
         .tab-scroll-container { 
             display: flex; align-items: center; gap: 0.5rem; overflow-x: auto; 
@@ -44,12 +45,27 @@
         .tab-scroll-container::-webkit-scrollbar { display: none; }
         
         .nav-tab { 
-            padding: 0.5rem 1rem; color: #9ca3af; font-size: 0.875rem; font-weight: 400; 
+            padding: 0.5rem 1rem; 
+            color: var(--tab-text, #9ca3af); 
+            font-size: 0.875rem; font-weight: 400; 
             border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;
             border: 1px solid transparent; transition: all 0.2s; cursor: pointer;
         }
-        .nav-tab:hover { color: #ffffff; background-color: rgba(79, 70, 229, 0.05); }
-        .nav-tab.active { color: #4f46e5; border-color: #4f46e5; background-color: rgba(79, 70, 229, 0.1); }
+        .nav-tab:hover { 
+            color: var(--tab-hover-text, #ffffff); 
+            background-color: var(--tab-hover-bg, rgba(79, 70, 229, 0.05));
+            border-color: var(--tab-hover-border, transparent);
+        }
+        .nav-tab.active { 
+            color: var(--tab-active-text, #4f46e5); 
+            border-color: var(--tab-active-border, #4f46e5); 
+            background-color: var(--tab-active-bg, rgba(79, 70, 229, 0.1)); 
+        }
+        .nav-tab.active:hover {
+            color: var(--tab-active-hover-text, #6366f1);
+            border-color: var(--tab-active-hover-border, #6366f1);
+            background-color: var(--tab-active-hover-bg, rgba(79, 70, 229, 0.15));
+        }
         
         .auth-controls-wrapper { display: flex; align-items: center; gap: 1rem; position: relative; }
         
@@ -62,7 +78,9 @@
 
         .auth-menu, .pin-context-menu {
             position: absolute; right: 0; top: 50px; width: 14rem;
-            background: #000; border: 1px solid #374151; border-radius: 0.75rem;
+            background: var(--menu-bg, #000); 
+            border: 1px solid var(--menu-border, #374151); 
+            border-radius: 0.75rem;
             padding: 0.5rem; display: none; flex-direction: column; gap: 0.25rem; z-index: 50;
         }
         .pin-context-menu { right: auto; left: 0; width: 12rem; }
@@ -70,13 +88,21 @@
         
         .auth-menu-item {
             display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem;
-            color: #d1d5db; border-radius: 0.5rem; text-decoration: none; font-size: 0.875rem;
+            color: var(--menu-text, #d1d5db); 
+            border-radius: 0.5rem; text-decoration: none; font-size: 0.875rem;
             transition: background 0.15s; cursor: pointer;
         }
-        .auth-menu-item:hover { background-color: #374151; color: white; }
-        .auth-header { padding: 0.5rem; border-bottom: 1px solid #374151; margin-bottom: 0.25rem; }
-        .auth-username { color: white; font-weight: 400; font-size: 0.9rem; }
-        .auth-email { color: #9ca3af; font-size: 0.75rem; }
+        .auth-menu-item:hover { 
+            background-color: var(--menu-item-hover-bg, #374151); 
+            color: var(--menu-item-hover-text, white); 
+        }
+        .auth-header { 
+            padding: 0.5rem; 
+            border-bottom: 1px solid var(--menu-divider, #374151); 
+            margin-bottom: 0.25rem; 
+        }
+        .auth-username { color: var(--menu-username-text, white); font-weight: 400; font-size: 0.9rem; }
+        .auth-email { color: var(--menu-email-text, #9ca3af); font-size: 0.75rem; }
 
         /* --- Settings Page Styles --- */
         .btn-toolbar-style {
@@ -253,7 +279,7 @@
     </div>
 
     <div id="navbar-container">
-        <img src="https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/logo.png" class="navbar-logo" alt="Logo">
+        <img src="https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/logo.png" id="navbar-logo" class="navbar-logo" alt="Logo">
         
         <div class="tab-wrapper">
             <div class="tab-scroll-container" id="tabs-container">
@@ -297,7 +323,7 @@
                         <i class="fa-solid fa-eye w-4"></i> Show Pin Button
                     </div>
                     <div class="auth-menu-item text-red-400 hover:text-red-300" id="logout-btn">
-                        <i class="fa-solid fa-right-from-bracket w-4"></i> (Disconnect)
+                        <i class="fa-solid fa-right-from-bracket w-4"></i> Disconnect
                     </div>
                 </div>
             </div>
@@ -510,6 +536,7 @@
         const PINNED_PAGE_KEY = 'local_pinned_page';
         const PIN_HIDDEN_KEY = 'local_pin_hidden';
         const USER_DATA_KEY = 'local_user_data';
+        const LAST_PAGE_KEY = 'local_last_page';
 
         const PAGE_DATA = {
             "dashboard": { "name": "Dashboard", "icon": "fa-solid fa-house-user", "url": "dashboard.html" },
@@ -520,6 +547,7 @@
             "weather": { "name": "Weather", "icon": "fa-solid fa-cloud-sun", "url": "weather.html" },
             "dictionary": { "name": "Dictionary", "icon": "fa-solid fa-book", "url": "dictionary.html" },
             "messenger-v2": { "name": "Messenger", "icon": "fa-solid fa-comments", "url": "messenger-tutorial.html" },
+            "games": { "name": "GAMES", "icon": "fa-solid fa-gamepad", "url": "games.html" },
             "settings": { "name": "Settings", "icon": "fa-solid fa-gear", "url": "settings.html" }
         };
 
@@ -676,6 +704,24 @@
             if (!userData) return;
             displayUsername.textContent = userData.username;
             displayEmail.textContent = userData.email;
+            
+            // Profile Picture Logic
+            const pfpType = userData.pfpType || 'letter';
+            let pfpHtml = '';
+            
+            if (pfpType === 'custom' && userData.customPfp) {
+                pfpHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover rounded-full" alt="Profile">`;
+            } else {
+                // Letter Avatar
+                const letter = (userData.username || 'U').charAt(0).toUpperCase();
+                const bgColor = userData.pfpLetterBg || '#3B82F6'; // Default blue
+                pfpHtml = `<div class="w-full h-full rounded-full flex items-center justify-center text-white font-bold text-lg" style="background-color: ${bgColor};">${letter}</div>`;
+            }
+            
+            authBtn.innerHTML = pfpHtml;
+            authBtn.style.padding = '0'; // Remove padding to let avatar fill
+            authBtn.style.overflow = 'hidden'; // Ensure roundness
+            authBtn.style.border = '1px solid #4b5563'; // Maintain border
         }
 
         // --- Auto-Login Logic ---
@@ -791,22 +837,37 @@
             
             // Determine start page
             let startPage = 'dashboard.html';
+            const lastPage = localStorage.getItem(LAST_PAGE_KEY);
             const pinned = localStorage.getItem(PINNED_PAGE_KEY);
             
-            // Validate pinned page exists in our data
-            if (pinned) {
-                // Check if pinned is a valid URL or Key in PAGE_DATA
+            // Priority: Last Page > Pinned > Default
+            if (lastPage) {
+                 const isValid = Object.values(PAGE_DATA).some(p => p.url === lastPage);
+                 if (isValid) startPage = lastPage;
+            } else if (pinned) {
                 const isValid = Object.values(PAGE_DATA).some(p => p.url === pinned);
                 if (isValid) startPage = pinned;
             }
             
             loadPage(startPage);
+            
+            // --- Apply Saved Theme on Startup ---
+            try {
+                const savedThemeRaw = localStorage.getItem('user-navbar-theme');
+                if (savedThemeRaw) {
+                    const savedTheme = JSON.parse(savedThemeRaw);
+                    applyTheme(savedTheme);
+                }
+            } catch(e) { console.error("Error applying saved theme:", e); }
         }
 
         // --- Page Loader ---
         window.loadPage = function(pageName) {
             // Intercept Settings
             if (pageName === 'settings.html' || pageName === 'settings') {
+                window.lastLoadedPage = 'settings.html';
+                localStorage.setItem(LAST_PAGE_KEY, 'settings.html');
+                renderNavbar(BASE_URL + 'settings.html');
                 openSettings();
                 return;
             }
@@ -821,6 +882,7 @@
             if (pageName.startsWith(BASE_URL)) pageName = pageName.substring(BASE_URL.length);
 
             window.lastLoadedPage = pageName;
+            localStorage.setItem(LAST_PAGE_KEY, pageName);
             renderNavbar(pageName);
 
             const url = BASE_URL + pageName;
@@ -1330,22 +1392,51 @@
             } catch(e) { console.error("Themes error", e); }
         }
         
+        const lightThemeNames = ['Light', 'Lavender', 'Rose Gold', 'Mint', 'Pink'];
+
         function applyTheme(theme) {
-            // Apply logic (simplified from navigation.js)
             const root = document.documentElement;
             
-            // --- Logo Path Modification from settings.js ---
+            // --- Logo Path Modification ---
+            let logoSrc;
             if (lightThemeNames.includes(theme.name)) {
-                theme['logo-src'] = '/images/logo-dark.png'; 
+                logoSrc = 'https://cdn.jsdelivr.net/npm/4sp-dv@latest/images/logo-dark.png'; 
+            } else if (theme.name === 'Christmas') {
+                logoSrc = 'https://cdn.jsdelivr.net/npm/4sp-dv@latest/images/logo-christmas.png';
             } else {
-                theme['logo-src'] = '/images/logo.png';
+                logoSrc = 'https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/logo.png';
             }
 
+            // Apply CSS Variables
             for (const [key, value] of Object.entries(theme)) {
                 if (key !== 'logo-src' && key !== 'name') {
                     root.style.setProperty(`--${key}`, value);
                 }
             }
+
+            // Apply Logo & Tinting
+            const logoImg = document.getElementById('navbar-logo');
+            if (logoImg) {
+                // Update Source (Use absolute path comparison or specific logic)
+                // We just set it. Browser handles cache.
+                // Note: The original navigation.js checked src endsWith to avoid reload flicker, but simple assignment is okay.
+                if (!logoImg.src.includes(logoSrc)) {
+                     logoImg.src = logoSrc;
+                }
+
+                // Apply Tinting
+                const noFilterThemes = ['Dark', 'Light', 'Christmas'];
+                if (noFilterThemes.includes(theme.name)) {
+                    logoImg.style.filter = ''; 
+                    logoImg.style.transform = '';
+                } else {
+                    const tintColor = theme['tab-active-text'] || '#ffffff';
+                    // The original navigation.js used this trick for SVG coloring via filter
+                    logoImg.style.filter = `drop-shadow(100px 0 0 ${tintColor})`;
+                    logoImg.style.transform = 'translateX(-100px)';
+                }
+            }
+
             // Save to local storage for persistence on reload
             localStorage.setItem('user-navbar-theme', JSON.stringify(theme));
             
