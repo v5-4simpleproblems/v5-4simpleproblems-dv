@@ -13,6 +13,10 @@
     <style>
         body { background-color: #040404; color: #c0c0c0; font-family: 'Geist', sans-serif; height: 100vh; margin: 0; display: flex; flex-direction: column; }
         
+        h1, h2, h3, .font-bold, .font-semibold, strong, b, .tracking-widest {
+            font-weight: 400 !important;
+        }
+
         #app-frame { width: 100%; height: 100%; border: none; display: none; flex-grow: 1; }
         .hidden { display: none !important; }
 
@@ -40,7 +44,7 @@
         .tab-scroll-container::-webkit-scrollbar { display: none; }
         
         .nav-tab { 
-            padding: 0.5rem 1rem; color: #9ca3af; font-size: 0.875rem; font-weight: 500; 
+            padding: 0.5rem 1rem; color: #9ca3af; font-size: 0.875rem; font-weight: 400; 
             border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;
             border: 1px solid transparent; transition: all 0.2s; cursor: pointer;
         }
@@ -71,7 +75,7 @@
         }
         .auth-menu-item:hover { background-color: #374151; color: white; }
         .auth-header { padding: 0.5rem; border-bottom: 1px solid #374151; margin-bottom: 0.25rem; }
-        .auth-username { color: white; font-weight: bold; font-size: 0.9rem; }
+        .auth-username { color: white; font-weight: 400; font-size: 0.9rem; }
         .auth-email { color: #9ca3af; font-size: 0.75rem; }
 
         /* --- Settings Page Styles --- */
@@ -81,7 +85,7 @@
             border-radius: 0.75rem;
             color: #d1d5db;
             padding: 0.5rem 1rem;
-            font-weight: 500;
+            font-weight: 400;
             cursor: pointer;
             transition: all 0.2s;
             display: inline-flex;
@@ -155,6 +159,38 @@
             background-color: #111111; border-radius: 0.5rem; color: #c0c0c0; transition: all 0.2s;
         }
         
+        /* --- Theme Picker Styles --- */
+        #theme-picker-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 1rem;
+            width: 100%;
+        }
+        .theme-button {
+            border: 2px solid var(--tab-active-border, #4f46e5); 
+            background-color: #111; 
+            border-radius: 0.75rem; 
+            padding: 0.75rem; 
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease-out;
+            opacity: 0.7;
+            position: relative;
+        }
+        .theme-button:hover {
+            opacity: 1;
+            border-color: var(--tab-active-hover-border, #6366f1);
+            transform: translateY(-2px);
+        }
+        .theme-button.active {
+            opacity: 1;
+            box-shadow: 0 0 10px var(--tab-active-shadow, rgba(79, 70, 229, 0.3));
+        }
+        .theme-button-name {
+            font-weight: 400;
+            color: #e0e0e0;
+        }
+
         /* Cropper & Theme Styles */
         #cropperModal {
             display: none; position: fixed; z-index: 2050; left: 0; top: 0; width: 100%; height: 100%;
@@ -351,7 +387,7 @@
                     <!-- Theme -->
                     <div class="p-6 bg-[#111] rounded-xl border border-[#252525]">
                         <h4 class="text-lg text-white font-semibold mb-4">Theme</h4>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="theme-grid">
+                        <div id="theme-picker-container">
                             <!-- Themes injected via JS -->
                         </div>
                     </div>
@@ -1225,23 +1261,70 @@
 
 
         // Theme Logic
-        const themeGrid = document.getElementById('theme-grid');
+        const themeGrid = document.getElementById('theme-picker-container');
         
         async function loadThemes() {
             try {
                 const res = await fetch('https://cdn.jsdelivr.net/npm/4sp-dv@latest/themes.json'); 
                 if (!res.ok) return;
-                const themes = await res.json();
+                let themes = await res.json();
                 
+                // --- Sorting Logic from settings.js ---
+                const orderedThemeNames = ['Dark', 'Light', 'Christmas'];
+                const sortedThemes = [];
+
+                orderedThemeNames.forEach(name => {
+                    const theme = themes.find(t => t.name === name);
+                    if (theme) {
+                        sortedThemes.push(theme);
+                        themes = themes.filter(t => t.name !== name);
+                    }
+                });
+
+                const colorMap = {
+                    'Crimson': 1, 'Fire': 1, 'Orange': 2, 'Sunset': 2, 'Rust': 2, 'Ember': 2, 'Copper': 2,
+                    'Gold': 3, 'Green': 4, 'Forest': 4, 'Matrix': 4, 'Mint': 5, 'Ocean': 6, 'Deep Blue': 6,
+                    'Purple': 7, 'Royal': 7, 'Haze': 7, 'Lavender': 7, 'Pink': 8, 'Coral': 8, 'Rose Gold': 8,
+                    'Clanker': 9, 'Monochrome': 9, 'Silver': 9, 'Slate': 9
+                };
+                
+                const getThemeType = (t) => (t['logo-src'] && t['logo-src'].includes('logo-dark.png')) ? 1 : 0;
+
+                themes.sort((a, b) => {
+                    const colorA = colorMap[a.name] || 100;
+                    const colorB = colorMap[b.name] || 100;
+                    if (colorA !== colorB) return colorA - colorB;
+                    const typeA = getThemeType(a);
+                    const typeB = getThemeType(b);
+                    if (typeA !== typeB) return typeA - typeB;
+                    return a.name.localeCompare(b.name);
+                });
+
+                themes = [...sortedThemes, ...themes];
+                // --- End Sorting Logic ---
+
+                const savedThemeRaw = localStorage.getItem('user-navbar-theme');
+                let savedTheme = null;
+                try { if(savedThemeRaw) savedTheme = JSON.parse(savedThemeRaw); } catch(e){}
+
                 themeGrid.innerHTML = '';
                 themes.forEach(theme => {
+                    const isActive = savedTheme && savedTheme.name === theme.name;
+                    const previewBg = theme['navbar-bg'] || '#000000';
+                    const previewText = theme['navbar-text'] || '#c0c0c0';
+                    const previewBorder = theme['tab-active-border'] || '#4f46e5';
+
                     const btn = document.createElement('button');
-                    btn.className = "flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-[#222] transition";
-                    btn.innerHTML = `
-                        <div class="w-full aspect-video rounded-md bg-gradient-to-br from-gray-700 to-gray-900 border border-[#333]" style="background: ${theme['navbar-bg']}"></div>
-                        <span class="text-xs text-gray-400">${theme.name}</span>
-                    `;
-                    btn.onclick = () => applyTheme(theme);
+                    btn.className = `theme-button ${isActive ? 'active' : ''}`;
+                    btn.style.backgroundColor = previewBg;
+                    btn.style.borderColor = previewBorder;
+                    btn.innerHTML = `<div class="theme-button-name" style="color: ${previewText};">${theme.name}</div>`;
+                    
+                    btn.onclick = () => {
+                        applyTheme(theme);
+                        document.querySelectorAll('.theme-button').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                    };
                     themeGrid.appendChild(btn);
                 });
             } catch(e) { console.error("Themes error", e); }
@@ -1250,6 +1333,14 @@
         function applyTheme(theme) {
             // Apply logic (simplified from navigation.js)
             const root = document.documentElement;
+            
+            // --- Logo Path Modification from settings.js ---
+            if (lightThemeNames.includes(theme.name)) {
+                theme['logo-src'] = '/images/logo-dark.png'; 
+            } else {
+                theme['logo-src'] = '/images/logo.png';
+            }
+
             for (const [key, value] of Object.entries(theme)) {
                 if (key !== 'logo-src' && key !== 'name') {
                     root.style.setProperty(`--${key}`, value);
