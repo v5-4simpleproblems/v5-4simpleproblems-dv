@@ -386,26 +386,18 @@
         // --- LOCATION FETCH (IP Fallback) ---
         async function initWeather() {
             showLoader(); // Show loader at start of location determination
-            try {
-                // 1. Get Location using IP (Default)
-                const ipRes = await fetch('https://ipapi.co/json/');
-                const ipData = await ipRes.json();
-                
-                CURRENT_LAT = ipData.latitude;
-                CURRENT_LON = ipData.longitude;
-                
-                if(!CURRENT_LAT || !CURRENT_LON) {
-                    hideLoader();
-                    return; 
-                }
-
-                // 2. Load weather using cache-check function
-                loadWeatherIfNeeded(CURRENT_LAT, CURRENT_LON);
-
-            } catch (err) {
-                console.warn("Initial weather load (IP location) failed", err);
-                hideLoader(); // Hide on failure
-            }
+        try {
+            const ipRes = await fetch('https://ipapi.co/json/');
+            if (!ipRes.ok) throw new Error('IP API Error');
+            const ipData = await ipRes.json();
+            lat = ipData.latitude;
+            lon = ipData.longitude;
+        } catch (e) {
+            console.warn("IP location fetch failed:", e);
+            // Fallback to New York or handle gracefully
+            lat = 40.7128;
+            lon = -74.0060;
+        }
         }
 
         // --- LOCATION FETCH (Browser Geolocation) ---

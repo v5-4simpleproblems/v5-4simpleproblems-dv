@@ -409,7 +409,9 @@ let db;
         const loggedInView = (user, userData) => {
             const username = userData?.username || user.displayName || 'User';
             const email = user.email || 'No email';
-            const initial = (userData?.letterAvatarText || username.charAt(0)).toUpperCase();
+            // Use username char or fallback to 'U'
+            const initial = (username.charAt(0) || 'U').toUpperCase();
+            
             let avatarHtml = '';
             const pfpType = userData?.pfpType || 'google'; 
 
@@ -438,18 +440,12 @@ let db;
                 const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base'); 
                 avatarHtml = `<div class="initial-avatar w-full h-full rounded-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}">${initial}</div>`;
             } else {
-                const googleProvider = user.providerData.find(p => p.providerId === 'google.com');
-                const googlePhoto = googleProvider ? googleProvider.photoURL : null;
-                const displayPhoto = googlePhoto || user.photoURL;
-
-                if (displayPhoto) {
-                    avatarHtml = `<img src="${displayPhoto}" class="w-full h-full object-cover rounded-full" alt="Profile">`;
-                } else {
-                    const bg = DEFAULT_THEME['avatar-gradient'];
-                    const textColor = getLetterAvatarTextColor(bg);
-                    const fontSizeClass = initial.length >= 3 ? 'text-xs' : (initial.length === 2 ? 'text-sm' : 'text-base');
-                    avatarHtml = `<div class="initial-avatar w-full h-full rounded-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}">${initial}</div>`;
-                }
+                // Default / Fallback: Use initial with specific brownish grey background
+                // "Generic brownish grey" -> #797474 (Taupe-ish grey)
+                const bg = '#797474'; 
+                const textColor = '#FFFFFF';
+                const fontSizeClass = 'text-base';
+                avatarHtml = `<div class="initial-avatar w-full h-full rounded-full font-semibold ${fontSizeClass}" style="background: ${bg}; color: ${textColor}">${initial}</div>`;
             }
             
             const isPinHidden = localStorage.getItem(PIN_BUTTON_HIDDEN_KEY) === 'true';
@@ -1180,7 +1176,7 @@ let db;
         navbar.style.width = `${dpr * 100}%`;
     };
 
-    const run = () => initializeApp(PAGE_IDENTIFICATION_DATA, FIREBASE_CONFIG);
+    function run() { initializeApp(PAGE_IDENTIFICATION_DATA, FIREBASE_CONFIG); }
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', run);

@@ -518,14 +518,24 @@
         }
 
         async function getIPLocation() {
-            const res = await fetch('https://ipapi.co/json/');
-            if (!res.ok) throw new Error("IP API failed");
-            const data = await res.json();
-            STATE.lat = data.latitude;
-            STATE.lon = data.longitude;
-            STATE.city = data.city;
-            STATE.region = data.region_code;
-            updateLocationDisplay();
+            try {
+                const res = await fetch('https://ipapi.co/json/');
+                if (!res.ok) throw new Error("IP API failed");
+                const data = await res.json();
+                STATE.lat = data.latitude;
+                STATE.lon = data.longitude;
+                STATE.city = data.city;
+                STATE.region = data.region_code;
+                updateLocationDisplay();
+            } catch (e) {
+                console.warn("IP location fetch failed:", e);
+                // Fallback to defaults or handle error state
+                STATE.lat = 40.7128;
+                STATE.lon = -74.0060;
+                STATE.city = "New York";
+                STATE.region = "NY";
+                updateLocationDisplay();
+            }
         }
         
         // --- SEARCH LOGIC ---
