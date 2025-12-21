@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4SP - LOCAL CLIENT</title>
+    <base href="https://cdn.jsdelivr.net/npm/4sp-dv@latest/logged-in/">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body { background-color: #040404; color: #c0c0c0; font-family: 'Geist', sans-serif; height: 100vh; margin: 0; display: flex; flex-direction: column; }
+        
+        h1, h2, h3, .font-bold, .font-semibold, strong, b, .tracking-widest {
+            font-weight: 400 !important;
+        }
+
+        #app-frame { width: 100%; height: 100%; border: none; display: none; flex-grow: 1; }
+        .hidden { display: none !important; }
+
+        /* --- Navbar Styles --- */
+        #navbar-container {
+            background: var(--navbar-bg, #000000);
+            border-bottom: 1px solid var(--navbar-border, #1f2937);
+            height: 64px;
+            width: 100%;
+            display: none; /* Hidden until unlocked */
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            box-sizing: border-box;
+            flex-shrink: 0;
+            z-index: 60; /* Ensure navbar is above settings */
+            position: relative;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        .navbar-logo { height: 40px; width: auto; transition: filter 0.3s ease; }
+        .tab-wrapper { flex-grow: 1; display: flex; align-items: center; position: relative; min-width: 0; margin: 0 1rem; justify-content: center; overflow: hidden; }
+        .tab-scroll-container { 
+            display: flex; align-items: center; gap: 0.5rem; overflow-x: auto; 
+            scrollbar-width: none; white-space: nowrap; max-width: 100%;
+        }
+        .tab-scroll-container::-webkit-scrollbar { display: none; }
+        
+        .nav-tab { 
+            padding: 0.5rem 1rem; 
+            color: var(--tab-text, #9ca3af); 
+            font-size: 0.875rem; font-weight: 400; 
+            border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;
+            border: 1px solid transparent; transition: all 0.2s; cursor: pointer;
+        }
+        .nav-tab:hover { 
+            color: var(--tab-hover-text, #ffffff); 
+            background-color: var(--tab-hover-bg, rgba(79, 70, 229, 0.05));
+            border-color: var(--tab-hover-border, transparent);
+        }
+        .nav-tab.active { 
+            color: var(--tab-active-text, #4f46e5); 
+            border-color: var(--tab-active-border, #4f46e5); 
+            background-color: var(--tab-active-bg, rgba(79, 70, 229, 0.1)); 
+        }
+        .nav-tab.active:hover {
+            color: var(--tab-active-hover-text, #6366f1);
+            border-color: var(--tab-active-hover-border, #6366f1);
+            background-color: var(--tab-active-hover-bg, rgba(79, 70, 229, 0.15));
+        }
+        
+        .auth-controls-wrapper { display: flex; align-items: center; gap: 1rem; position: relative; }
+        
+        .icon-btn {
+            width: 40px; height: 40px; border-radius: 50%; border: 1px solid #4b5563; 
+            display: flex; align-items: center; justify-content: center; color: #d1d5db; 
+            cursor: pointer; background: transparent; transition: background 0.2s; position: relative;
+        }
+        .icon-btn:hover { background-color: #374151; color: white; }
+
+        .auth-menu, .pin-context-menu {
+            position: absolute; right: 0; top: 50px; width: 14rem;
+            background: var(--menu-bg, #000); 
+            border: 1px solid var(--menu-border, #374151); 
+            border-radius: 0.75rem;
+            padding: 0.5rem; display: none; flex-direction: column; gap: 0.25rem; z-index: 50;
+        }
+        .pin-context-menu { right: auto; left: 0; width: 12rem; }
+        .auth-menu.open, .pin-context-menu.open { display: flex; }
+        
+        .auth-menu-item {
+            display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem;
+            color: var(--menu-text, #d1d5db); 
+            border-radius: 0.5rem; text-decoration: none; font-size: 0.875rem;
+            transition: background 0.15s; cursor: pointer;
+        }
+        .auth-menu-item:hover { 
+            background-color: var(--menu-item-hover-bg, #374151); 
+            color: var(--menu-item-hover-text, white); 
+        }
+        .auth-header { 
+            padding: 0.5rem; 
+            border-bottom: 1px solid var(--menu-divider, #374151); 
+            margin-bottom: 0.25rem; 
+        }
+        .auth-username { color: var(--menu-username-text, white); font-weight: 400; font-size: 0.9rem; }
+        .auth-email { color: var(--menu-email-text, #9ca3af); font-size: 0.75rem; }
+
+        /* --- Settings Page Styles --- */
+        .btn-toolbar-style {
+            background: #00000000;
+            border: 1px solid #333;
+            border-radius: 0.75rem;
+            color: #d1d5db;
+            padding: 0.5rem 1rem;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-toolbar-style:hover {
+            background-color: #000000;
+            border-color: #fff;
+            color: #ffffff;
+        }
+        .btn-toolbar-style.btn-primary-override {
+            justify-content: center;
+            background-color: rgba(79, 70, 229, 0.1);
+            border: 1px solid #4f46e5;
+            color: #4f46e5;
+        }
+        .btn-toolbar-style.btn-primary-override:hover {
+            background-color: rgba(79, 70, 229, 0.15);
+            border-color: #6366f1;
+            color: #6366f1;
+        }
+        .settings-tab {
+            width: 100%; justify-content: flex-start; padding: 0.75rem 1rem; border-radius: 0.75rem;
+            color: #9ca3af; background: transparent; border: 1px solid transparent; transition: all 0.2s;
+            display: flex; align-items: center; gap: 0.75rem; font-size: 0.95rem;
+        }
+        .settings-tab:hover { color: #fff; background: #1a1a1a; }
+        .settings-tab.active {
+            background-color: rgba(79, 70, 229, 0.1); border: 1px solid #4f46e5; color: #4f46e5;
+        }
+        
+        /* --- Theme Picker Styles --- */
+        #theme-picker-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; width: 100%; }
+        .theme-button {
+            border: 2px solid var(--tab-active-border, #4f46e5); background-color: #111; 
+            border-radius: 0.75rem; padding: 0.75rem; text-align: center; cursor: pointer;
+            transition: all 0.2s ease-out; opacity: 0.7; position: relative;
+        }
+        .theme-button:hover { opacity: 1; border-color: var(--tab-active-hover-border, #6366f1); transform: translateY(-2px); }
+        .theme-button.active { opacity: 1; box-shadow: 0 0 10px var(--tab-active-shadow, rgba(79, 70, 229, 0.3)); }
+        .theme-button-name { font-weight: 400; color: #e0e0e0; }
+
+        /* Cropper & Theme Styles */
+        #cropperModal { display: none; position: fixed; z-index: 2050; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); justify-content: center; align-items: center; flex-direction: column; }
+        #cropperContent { background-color: #000000; padding: 0; border-radius: 1rem; border: 1px solid #333; display: flex; flex-direction: column; width: 90%; max-width: 600px; overflow: hidden; }
+        #cropperCanvasContainer { position: relative; margin-bottom: 20px; overflow: hidden; max-height: 60vh; }
+        #cropperCanvas { display: block; max-width: 100%; max-height: 60vh; border: 1px dashed rgba(255, 255, 255, 0.3); }
+    </style>
+</head>
+<body>
+    <div id="lock-screen" class="w-full h-full flex flex-col items-center justify-center p-4">
+        <div class="max-w-5xl w-full bg-[#040404] flex flex-col md:flex-row border border-[#252525] rounded-3xl overflow-hidden shadow-2xl">
+            <div class="flex-1 p-8 flex flex-col justify-center items-center border-b md:border-b-0 md:border-r border-[#252525]">
+                <h2 class="text-3xl text-[#c0c0c0] mb-6 text-center w-full font-light tracking-tighter">4SP v5 Client</h2>
+                <p class="text-[#505050] text-center mb-8 text-sm">Enter your 12-character access code.</p>
+                <input type="text" id="codeInput" class="w-full max-w-xs bg-[#111] border border-[#252525] text-white rounded-xl p-3 text-center tracking-[0.2em] mb-4 outline-none focus:border-indigo-500 transition" placeholder="XXXX-XXXX-XXXX">
+                <button id="unlockBtn" class="w-full max-w-xs py-2 px-4 text-sm font-medium rounded-xl text-indigo-500 bg-indigo-500/10 border border-indigo-500 hover:bg-indigo-500/20 transition mb-4">Login</button>
+                <p id="lockMessage" class="text-red-400 text-xs mt-2 min-h-[20px] text-center"></p>
+                <p id="loading-text" class="text-gray-500 text-xs mt-2 hidden text-center">Verifying...</p>
+            </div>
+            <div class="flex-1 p-8 flex flex-col justify-center items-center bg-[#040404]">
+                <h2 class="text-3xl text-[#c0c0c0] mb-6 text-center w-full font-light tracking-tighter">How it works</h2>
+                <p class="text-lg text-[#505050] mb-8 text-center max-w-md font-light leading-relaxed">This client provides secure, local access to the 4SP suite. Generate a unique code from your web dashboard to log in properly.</p>
+                <a href="https://4sp-organization.github.io/connection.html" target="_blank" class="w-full max-w-xs py-2 px-4 text-sm font-medium rounded-xl text-cyan-500 bg-cyan-500/10 border border-cyan-500 hover:bg-cyan-500/20 transition text-center flex items-center justify-center">Get Your Code</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="navbar-container">
+        <img src="https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/logo.png" id="navbar-logo" class="navbar-logo" alt="Logo">
+        <div class="tab-wrapper"><div class="tab-scroll-container" id="tabs-container"></div></div>
+        <div class="auth-controls-wrapper">
+            <div class="relative" id="pin-wrapper">
+                <button id="pin-btn" class="icon-btn" title="Pin this page"><i class="fa-solid fa-thumbtack"></i></button>
+                <div id="pin-menu" class="pin-context-menu">
+                    <div class="auth-menu-item" id="repin-btn"><i class="fa-solid fa-thumbtack w-4"></i> Repin</div>
+                    <div class="auth-menu-item text-red-400 hover:text-red-300" id="remove-pin-btn"><i class="fa-solid fa-xmark w-4"></i> Remove Pin</div>
+                    <div class="auth-menu-item text-red-400 hover:text-red-300" id="hide-pin-btn"><i class="fa-solid fa-eye-slash w-4"></i> Hide Button</div>
+                </div>
+            </div>
+            <div class="relative">
+                <button id="auth-btn" class="icon-btn"><i class="fa-solid fa-user"></i></button>
+                <div id="auth-menu" class="auth-menu">
+                    <div class="auth-header">
+                        <div class="auth-username" id="display-username">Client User</div>
+                        <div class="auth-email" id="display-email">local@client</div>
+                    </div>
+                    <a href="#" class="auth-menu-item" onclick="loadPage('settings.html'); return false;"><i class="fa-solid fa-gear w-4"></i> Settings</a>
+                    <div class="auth-menu-item hidden" id="show-pin-menu-item"><i class="fa-solid fa-eye w-4"></i> Show Pin Button</div>
+                    <div class="auth-menu-item text-red-400 hover:text-red-300" id="logout-btn"><i class="fa-solid fa-right-from-bracket w-4"></i> Disconnect</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-overlay" class="fixed bottom-0 left-0 right-0 bg-[#040404] z-50 hidden flex flex-col" style="top: 64px;">
+        <header class="flex justify-between items-center p-4 border-b border-[#1a1a1a] bg-[#000]">
+            <h1 class="text-2xl font-bold text-white pl-4">4SP Settings</h1>
+            <button id="close-settings-btn" class="text-gray-400 hover:text-white pr-4"><i class="fa-solid fa-xmark fa-2x"></i></button>
+        </header>
+        <div class="flex flex-grow overflow-hidden">
+            <nav class="w-64 border-r border-[#1a1a1a] bg-[#000] p-4 flex flex-col gap-2 overflow-y-auto">
+                <button class="settings-tab active" data-tab="general"><i class="fa-solid fa-gear w-5"></i> <span>General</span></button>
+                <button class="settings-tab" data-tab="personalization"><i class="fa-solid fa-palette w-5"></i> <span>Personalization</span></button>
+                <button class="settings-tab" data-tab="privacy"><i class="fa-solid fa-shield-halved w-5"></i> <span>Privacy & Security</span></button>
+                <button class="settings-tab" data-tab="about"><i class="fa-solid fa-circle-info w-5"></i> <span>About 4SP</span></button>
+            </nav>
+            <div id="settings-content" class="flex-grow p-8 overflow-y-auto bg-[#0d0d0d]">
+                <div id="tab-general" class="settings-section">
+                    <h3 class="text-2xl text-white font-bold mb-6">General Settings</h3>
+                    <div class="mb-6"><label class="block text-gray-400 text-sm mb-2">Username</label><div class="flex gap-2"><input type="text" id="settings-username-input" class="bg-[#111] border border-[#333] text-white rounded-lg px-4 py-2 w-full max-w-md focus:border-indigo-500 outline-none transition" placeholder="New Username"><button id="save-username-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition">Save</button></div><p id="username-msg" class="text-sm mt-2 min-h-[20px]"></p></div>
+                </div>
+                <div id="tab-personalization" class="settings-section hidden">
+                    <h3 class="text-2xl text-white font-bold mb-6">Personalization</h3>
+                    <div class="mb-8 p-6 bg-[#111] rounded-xl border border-[#252525]"><h4 class="text-lg text-white font-semibold mb-4">Profile Picture</h4><div class="flex items-start gap-6"><div class="flex flex-col items-center gap-2"><div id="pfp-preview" class="w-24 h-24 rounded-full bg-gray-700 overflow-hidden border-2 border-[#333] flex items-center justify-center text-3xl font-bold text-white relative"></div><p class="text-xs text-gray-500">Preview</p></div><div class="flex-grow"><div class="flex gap-4 mb-4 border-b border-[#333] pb-4"><button class="pfp-mode-btn active px-3 py-1 rounded-lg text-sm text-gray-300 hover:bg-[#222] transition" data-mode="letter">Letter Avatar</button><button class="pfp-mode-btn px-3 py-1 rounded-lg text-sm text-gray-300 hover:bg-[#222] transition" data-mode="upload">Upload Image</button></div><div id="pfp-letter-options" class="block"><div class="grid grid-cols-6 gap-2 mb-4 max-w-xs"></div><button id="save-letter-pfp-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition">Set Letter Avatar</button></div><div id="pfp-upload-options" class="hidden"><input type="file" id="pfp-upload-input" accept="image/*" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#222] file:text-white hover:file:bg-[#333] mb-4"/><p class="text-xs text-gray-500 mb-4">Max size 2MB. Square images work best.</p><button id="save-upload-pfp-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition">Upload & Set</button></div></div></div></div>
+                    <div class="p-6 bg-[#111] rounded-xl border border-[#252525]"><h4 class="text-lg text-white font-semibold mb-4">Theme</h4><div id="theme-picker-container"></div></div>
+                </div>
+                <div id="tab-privacy" class="settings-section hidden">
+                    <h3 class="text-2xl text-white font-bold mb-6">Privacy & Security</h3>
+                    <div class="p-6 bg-[#111] rounded-xl border border-[#252525]"><h4 class="text-lg text-white font-semibold mb-2">Panic Key</h4><p class="text-sm text-gray-400 mb-4">Pressing this key will immediately redirect you to Google.</p><div class="flex items-center gap-4"><div class="relative"><input type="text" id="panic-key-input" maxlength="1" class="w-16 h-16 bg-[#0a0a0a] border border-[#333] rounded-xl text-center text-2xl text-white focus:border-red-500 outline-none uppercase font-mono transition" placeholder="-"></div><div class="flex flex-col"><span class="text-sm text-gray-300">Current Key: <span id="current-panic-key" class="text-red-400 font-mono font-bold">NONE</span></span><button id="save-panic-key-btn" class="text-xs text-blue-400 hover:text-blue-300 mt-1 text-left">Save Key</button><button id="clear-panic-key-btn" class="text-xs text-gray-500 hover:text-gray-400 mt-1 text-left">Clear Key</button></div></div></div>
+                </div>
+                <div id="tab-about" class="settings-section hidden">
+                    <h3 class="text-2xl text-white font-bold mb-6">About 4SP</h3>
+                    <div class="p-6 bg-[#111] rounded-xl border border-[#252525] flex flex-col items-center text-center"><img src="https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/logo.png" class="h-24 mb-4" alt="Logo"><h1 class="text-3xl font-bold text-white mb-2">4SimpleProblems</h1><p class="text-gray-400 mb-6 max-w-lg">A comprehensive student toolkit and entertainment platform.</p><div class="inline-block bg-[#0a0a0a] border border-[#333] px-4 py-2 rounded-full mb-8"><span class="text-gray-500 text-sm">Version</span><span class="text-indigo-400 font-mono font-bold ml-2">5.0.0 DV</span></div><div class="flex gap-4"><a href="#" class="text-gray-400 hover:text-white transition"><i class="fa-brands fa-github fa-xl"></i></a><a href="#" class="text-gray-400 hover:text-white transition"><i class="fa-brands fa-youtube fa-xl"></i></a><a href="#" class="text-gray-400 hover:text-white transition"><i class="fa-brands fa-discord fa-xl"></i></a></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="cropperModal"><div id="cropperContent"><div class="flex justify-between items-center p-6 border-b border-[#333] bg-black"><h3 class="text-2xl font-bold text-white">Adjust Profile Picture</h3><button id="cancelCropBtn" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark fa-xl"></i></button></div><div class="flex flex-col items-center p-6 bg-[#0a0a0a]"><p class="text-sm text-gray-400 mb-4">Drag to move. Scroll to resize.</p><div id="cropperCanvasContainer" class="relative mb-6 border border-[#333] rounded-lg overflow-hidden w-full flex justify-center bg-black"><canvas id="cropperCanvas"></canvas></div><div class="flex justify-end w-full"><button id="submitCropBtn" class="btn-toolbar-style btn-primary-override px-6 py-2 rounded-xl"><i class="fa-solid fa-check mr-2"></i> Submit</button></div></div></div></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // --- EMBEDDED GAMES HTML ---
+        // Contains the Fullscreen fix and GN-Math fetch fix.
+        // Paths are relative (../) and will be replaced dynamically.
+        const GAMES_PAGE_CONTENT = `
+<!DOCTYPE html>
+<html lang="en"> 
+<head>
+    <title>4SP - GAMES</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <link rel="icon" type="image/x-icon" href="img/favicon.ico" id="faviconLink" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <script src="../url-changer.js"><\/script>
+    <script src="../analytics.js"><\/script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1D4F692C1Q"><\/script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-1D4F692C1Q');
+    <\/script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'deep-black': '#040404', 'card-dark': '#111111', 'accent-indigo': '#4f46e5', 'brand-border': '#252525',
+                        'strongdog-orange': '#FFA500', 'gn-math': '#FB2651', 'gameboy': '#9A2257', 'other-grey': '#AAAAAA', 
+                    },
+                    fontFamily: { sans: ['Geist', 'sans-serif'], },
+                    borderRadius: { 'md': '0.375rem', 'lg': '0.5rem', 'xl': '0.75rem', '2xl': '1.25rem', '3xl': '1.5rem', },
+                    aspectRatio: { '3/2': '3 / 2', },
+                }
+            }
+        }
+    <\/script>
+    <style>
+        :root { --menu-bg: #000000; --menu-border: #333; --menu-text: #d1d5db; --tab-hover-text: #ffffff; --tab-active-bg: rgba(79, 70, 229, 0.1); --tab-active-text: #4f46e5; --tab-active-border: #4f46e5; }
+        body { font-family: 'Geist', 'sans-serif'; font-weight: 300; background-color: #040404; padding-bottom: 100px; }
+        h1, h2, h3, .font-bold, .font-semibold, strong { font-weight: 400 !important; }
+        .btn-toolbar-style { background: var(--menu-bg); border: 1px solid var(--menu-border); border-radius: 0.75rem; color: var(--menu-text); padding: 0.5rem 1rem; font-weight: 500; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; text-decoration: none; font-size: 1rem; }
+        .btn-toolbar-style:hover { background-color: var(--menu-bg); border-color: #fff; color: var(--tab-hover-text); }
+        .btn-card-action { display: inline-flex; align-items: center; justify-content: center; width: 2.25rem; height: 2.25rem; border-radius: 0.5rem; background-color: transparent; border: 1px solid transparent; color: #9ca3af; cursor: pointer; transition: all 0.2s; font-size: 1rem; }
+        .btn-card-action:hover { background-color: var(--tab-active-bg); color: var(--tab-active-text); border-color: var(--tab-active-border); }
+        .btn-card-action.fav-action .fa-solid-star { display: none; }
+        .btn-card-action.fav-action .fa-regular-star { display: inline-block; }
+        .btn-card-action.fav-action.favorited .fa-solid-star { display: inline-block; color: #facc15; }
+        .btn-card-action.fav-action.favorited .fa-regular-star { display: none; }
+        .btn-card-action.fav-action:not(.favorited):hover .fa-regular-star { color: var(--tab-active-text); }
+        .zone-item { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; will-change: transform; }
+        .zone-item:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(79, 70, 229, 0.2); }
+        .other-zone-item { min-height: 250px; transition: box-shadow 0.2s ease-in-out; position: relative; z-index: 1; }
+        .other-zone-item:hover { box-shadow: 0 8px 25px rgba(170, 170, 170, 0.2); z-index: 10; }
+        .other-zone-item .image-overlay { background: linear-gradient(90deg, rgba(7,7,7,0.85) 0%, rgba(7,7,7,0) 40%, rgba(7,7,7,0) 60%, rgba(7,7,7,0.85) 100%); border-radius: 1.25rem; }
+        .other-zone-item:hover .image-overlay { background: linear-gradient(90deg, rgba(7,7,7,0.7) 0%, rgba(7,7,7,0) 50%, rgba(7,7,7,0) 50%, rgba(7,7,7,0.7) 100%); }
+        @keyframes fadeOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.95); } }
+        .fade-out { animation: fadeOut 0.3s ease-out forwards; pointer-events: none; }
+        .search-results-container { max-height: 300px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #333 transparent; }
+        .search-item { display: flex; cursor: pointer; transition: background-color 0.2s; color: #e5e7eb; text-decoration: none; padding: 10px 15px; }
+        .search-item:hover { background-color: rgba(255, 255, 255, 0.05); }
+        @media (max-width: 768px) { #bottom-fixed-bar { left: 10px !important; right: 10px !important; bottom: 10px !important; width: auto !important; } }
+        .aspect-w-3 { position: relative; padding-bottom: 66.666667%; }
+        .aspect-w-3 > * { position: absolute; height: 100%; width: 100%; top: 0; right: 0; bottom: 0; left: 0; }
+        #zoneViewer { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); z-index: 5000; flex-direction: column; }
+        #zoneViewer .zone-header { background-color: #111111; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #252525; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex-shrink: 0; }
+        #zoneViewer .zone-header .zone-title h2 { margin: 0; font-size: 1.3em; color: #ffffff; font-family: 'Geist', sans-serif; }
+        #zoneViewer .zone-header .zone-controls { display: flex; align-items: center; }
+        #zoneViewer .zone-header .zone-controls button, #zoneViewer .zone-header .zone-controls a { margin-left: 8px; width: 40px; height: 40px; background-color: rgba(255, 255, 255, 0.1); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); color: white; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 0.5rem; cursor: pointer; font-size: 1em; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s ease-in-out; text-decoration: none; }
+        #zoneViewer .zone-header .zone-controls button:hover, #zoneViewer .zone-header .zone-controls a:hover { background-color: rgba(255, 255, 255, 0.2); }
+        #zoneViewer iframe { flex-grow: 1; border: none; background-color: #000; }
+        .hidden { display: none !important; }
+        .eagler-dropdown { display: none; position: absolute; bottom: 120%; right: 0; margin-bottom: 5px; background-color: rgba(20, 20, 20, 0.98); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 0.75rem; padding: 0.5rem; z-index: 1000; min-width: 200px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); transform-origin: bottom right; }
+        .eagler-dropdown.show { display: block; animation: fadeInUp 0.15s ease-out; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .eagler-dropdown-link { display: block; padding: 0.6rem 0.8rem; color: #d1d5db; text-decoration: none; border-radius: 0.5rem; transition: all 0.2s; font-weight: 400; white-space: nowrap; font-size: 0.9rem; }
+        .eagler-dropdown-link:hover { background-color: rgba(255, 255, 255, 0.1); color: white; }
+        #creditsModal { display: none; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #555; }
+    </style>
+</head>
+<body class="bg-deep-black text-white min-h-screen">
+    <main class="mx-auto my-5 w-full max-w-screen-2xl px-4 relative">
+        <button id="creditsBtn" class="absolute top-0 right-4 z-20 btn-toolbar-style"><i class="fa-solid fa-users mr-2"></i>Credits</button>
+        <div class="mx-auto my-8 p-4 sm:p-6 w-full max-w-3xl relative">
+            <p class="bg-card-dark text-white p-5 rounded-xl shadow-lg border border-brand-border text-sm sm:text-base text-center">
+                <strong>Welcome to 4SP Games!</strong><br>This is a collection of games curated for the 4SP community. Use the search bar below to find your favorite.
+            </p>
+        </div>
+        <div id="favoritesSection"><h2 id="favoritesHeader" class="text-center text-3xl font-bold mt-12 mb-6 text-white" style="display: none;"><strong>Favorites</strong></h2><div class="games-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-4" id="favoritesGameList" style="display: none;"></div></div>
+        <div id="top20Section" style="display: none;"><h2 id="top20Header" class="text-center text-3xl font-bold mt-12 mb-6 text-white"><strong>Top 20</strong></h2><div class="games-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-4" id="top20GameList"></div></div>
+        <div id="category-viewer" class="w-full mt-12">
+            <div id="category-slider-container" class="relative flex items-center justify-center max-w-sm mx-auto h-12">
+                <button id="prev-category" class="absolute left-0 top-1/2 -translate-y-1/2 text-2xl text-gray-500 hover:text-white transition-all p-2 z-10 disabled:opacity-30 disabled:text-gray-700 disabled:hover:text-gray-700"><i class="fas fa-chevron-left"></i></button>
+                <div class="overflow-hidden w-64 text-center"><div id="category-slider" class="flex transition-transform duration-500 ease-in-out"></div></div>
+                <button id="next-category" class="absolute right-0 top-1/2 -translate-y-1/2 text-2xl text-gray-500 hover:text-white transition-all p-2 z-10 disabled:opacity-30 disabled:text-gray-700 disabled:hover:text-gray-700"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div id="games-grid-container" class="games-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-4 mt-6 transition-opacity duration-300 ease-in-out"></div>
+        </div>
+    </main>
+    <div id="bottom-fixed-bar" class="fixed bottom-4 right-4 bg-black/80 backdrop-blur-xl rounded-3xl border border-brand-border shadow-2xl shadow-black/50 w-full max-w-md z-50 transition-all duration-300 flex flex-col">
+        <div id="searchResults" class="search-results-container w-full" style="display: none;"></div>
+        <div id="searchDivider" class="w-full h-[1px] bg-white/10" style="display: none;"></div>
+        <div class="flex items-center w-full p-1"><div class="pl-4 pr-2 text-gray-400"><i class="fa-solid fa-magnifying-glass"></i></div><input type="text" id="searchInput" placeholder="Search for games…" autocomplete="off" class="w-full py-3 pr-4 bg-transparent text-white placeholder-gray-500 focus:outline-none focus:ring-0 text-base" /></div>
+    </div>
+    <div id="zoneViewer" aria-modal="true" role="dialog">
+        <div class="zone-header">
+             <div class="zone-title"><h2 id="zoneNameEl">Game Title</h2></div>
+             <div class="zone-controls"><button id="fullscreenBtnZone" title="Fullscreen"><i class="fas fa-expand"></i></button><a id="downloadBtnZone" title="Download" class="hidden" href="#"><i class="fas fa-download"></i></a><button id="closeBtnZone" title="Close"><i class="fas fa-times"></i></button></div>
+        </div>
+        <iframe id="zoneFrame" title="Game Content" allowfullscreen sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-fullscreen"></iframe>
+    </div>
+    <div id="creditsModal" class="fixed top-0 left-0 w-full h-full bg-black/70 backdrop-blur-lg z-[6000] items-center justify-center p-4" style="display: none;"><div class="bg-card-dark rounded-xl border border-brand-border shadow-2xl w-full max-w-lg overflow-y-auto max-h-[90vh]"><div class="flex justify-between items-center p-4 border-b border-brand-border sticky top-0 bg-card-dark z-10"><h3 class="text-xl font-bold">Project Credits</h3><button id="closeCreditsBtn" class="text-white hover:text-gray-400 p-2"><i class="fas fa-times"></i></button></div><div id="creditsContent" class="p-6 space-y-6"></div></div></div>
+    <div id="instruction-overlay" class="fixed inset-0 bg-black/80 z-[8000] transition-opacity duration-300 opacity-0 flex items-center justify-center p-4" style="display: none;">
+        <div class="bg-card-dark text-white rounded-3xl border border-gray-700 shadow-2xl backdrop-blur-md w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div class="p-6 sm:p-8 overflow-y-auto custom-scrollbar">
+                <h3 class="text-2xl font-bold mb-4 text-center">Welcome to 4SP Games</h3><p class="text-sm text-gray-400 mb-6 text-center">Please read the following information before playing.</p>
+                <ul class="space-y-4 text-gray-300 text-sm sm:text-base leading-relaxed">
+                    <li class="flex items-start"><i class="fas fa-compass mt-1 mr-3 text-accent-indigo"></i><span><strong>Navigation:</strong> Use the arrows next to the category title.</span></li>
+                    <li class="flex items-start"><i class="fas fa-bug mt-1 mr-3 text-strongdog-orange"></i><span><strong>Stability Disclaimer:</strong> Some games may be unstable.</span></li>
+                    <li class="flex items-start"><i class="fas fa-server mt-1 mr-3 text-gn-math"></i><span><strong>GN-Math:</strong> These games load from external sources.</span></li>
+                </ul>
+            </div>
+            <div class="p-6 border-t border-gray-800 bg-black/20 rounded-b-3xl flex flex-col sm:flex-row items-center justify-between gap-4"><span class="text-xs text-gray-500">Type "I understand" to continue.</span><input type="text" id="instruction-input" placeholder="Type 'I understand'" class="w-full sm:w-auto px-6 py-3 border border-transparent text-base font-normal rounded-xl text-white bg-purple-500/10 ring-1 ring-purple-500/50 focus:ring-purple-500/80 focus:bg-purple-500/20 focus:outline-none placeholder-gray-400 transition-all duration-200"></div>
+        </div>
+    </div>
+    <script type="module">
+        import games from "./cards-data.js";
+        import { siteMapping } from "./site-mapping.js";
+
+        const TOP_GAMES_URL = "https://script.google.com/macros/s/AKfycbx1xYwL2QqkOQHyeCWIVSMVLP_XXts5zpb0M-vbvlRl1MpRYYcv4NI-i8OaGc0YP0wpsg/exec?action=getTop10"; 
+        const GN_ZONES_URL = "https://cdn.jsdelivr.net/gh/gn-math/assets@main/zones.json";
+        const GN_COVER_URL_BASE = "https://cdn.jsdelivr.net/gh/gn-math/covers@main";
+        const GN_HTML_URL_BASE = "https://cdn.jsdelivr.net/gh/gn-math/html@main";
+        const FAVORITES_KEY = 'gameHubFavorites_v3';
+
+        let allGames = [];
+        let searchableGames = [];
+        let categories = [];
+        let currentCategoryIndex = 0;
+        const categoryColors = { 'StrongdogXP': 'text-strongdog-orange', 'GN-Math': 'text-gn-math', 'Gameboy Games': 'text-gameboy', 'Others': 'text-other-grey', };
+        const CREDITS_DATA = { 'StrongdogXP': { credit: "Core game collection provided by Josh P.", githubUrl: "https://github.com/jman1593/" }, 'GN-Math': { credit: "Primary game source provided by the GN-Math Community.", githubUrl: "https://github.com/gn-math/" }, 'Gameboy Games': { credit: "Emulator and ROM files from public sources." }, 'Others': { credit: "Community developers and open-source projects." } };
+        
+        const favoritesHeader = document.getElementById("favoritesHeader");
+        const favoritesGameList = document.getElementById("favoritesGameList");
+        const top20Section = document.getElementById("top20Section");
+        const top20GameList = document.getElementById("top20GameList");
+        const searchInput = document.getElementById("searchInput");
+        const searchResults = document.getElementById("searchResults");
+        const searchDivider = document.getElementById("searchDivider");
+        const categorySlider = document.getElementById('category-slider');
+        const prevCategoryBtn = document.getElementById('prev-category');
+        const nextCategoryBtn = document.getElementById('next-category');
+        const gamesGridContainer = document.getElementById('games-grid-container');
+        const creditsModal = document.getElementById('creditsModal');
+        const creditsContent = document.getElementById('creditsContent');
+        const creditsBtn = document.getElementById('creditsBtn');
+        const closeCreditsBtn = document.getElementById('closeCreditsBtn');
+        const INSTRUCTION_KEY = '4sp-games-instruction-extended-seen';
+        const instructionOverlay = document.getElementById('instruction-overlay');
+        const instructionInput = document.getElementById('instruction-input');
+
+        const imageObserver = new IntersectionObserver((entries, observer) => { entries.forEach(entry => { const img = entry.target; if (entry.isIntersecting) { if (img.dataset.src) img.src = img.dataset.src; } }); }, { rootMargin: "300px 0px", threshold: 0.01 });
+        function observeImages(container) { container.querySelectorAll('img[data-src]').forEach(img => imageObserver.observe(img)); }
+
+        function updateURL(category, gameId = null) { let hash = '#'+encodeURIComponent(category.replace(/\s+/g, '-')); if (gameId) hash += '?id='+gameId; history.replaceState(null, null, hash); }
+        function parseURL() { const hash = window.location.hash.substring(1); if (!hash) return { category: null, gameId: null }; const parts = hash.split('?'); return { category: decodeURIComponent(parts[0]).replace(/-/g, ' '), gameId: parts[1] ? new URLSearchParams(parts[1]).get('id') : null }; }
+
+        function setupInstructionOverlay() {
+            if (localStorage.getItem(INSTRUCTION_KEY) !== 'seen') {
+                instructionOverlay.style.display = 'flex'; document.body.style.overflow = 'hidden'; 
+                setTimeout(() => { instructionOverlay.classList.remove('opacity-0'); instructionOverlay.classList.add('opacity-100'); }, 10);
+                instructionInput.addEventListener('input', (e) => { if (e.target.value.trim().toLowerCase() === 'i understand') { instructionOverlay.classList.remove('opacity-100'); instructionOverlay.classList.add('opacity-0'); setTimeout(() => { instructionOverlay.style.display = 'none'; document.body.style.overflow = ''; localStorage.setItem(INSTRUCTION_KEY, 'seen'); }, 300); } });
+            }
+        }
+        
+        const getFavorites = () => JSON.parse(localStorage.getItem(FAVORITES_KEY)) || [];
+        const saveFavorites = (favs) => localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
+        
+        function toggleFavorite(gameId) {
+            const strGameId = String(gameId); let favorites = getFavorites().map(String);
+            if (favorites.includes(strGameId)) {
+                favorites = favorites.filter(id => id !== strGameId); saveFavorites(favorites); updateAllFavoriteButtons();
+                const favCard = favoritesGameList.querySelector(\`.zone-item[data-game-id='\${strGameId}'], .other-zone-item[data-game-id='\${strGameId}']\`);
+                if (favCard) { favCard.classList.add('fade-out'); setTimeout(() => { favCard.remove(); if (favoritesGameList.children.length === 0) { favoritesHeader.style.display = 'none'; favoritesGameList.style.display = 'none'; } }, 300); }
+            } else {
+                favorites.push(strGameId); saveFavorites(favorites); updateAllFavoriteButtons();
+                let gameData = allGames.find(g => String(g.id) === strGameId);
+                if (!gameData) allGames.some(g => { if(g.versions) { const v = g.versions.find(ver => String(ver.favoriteId) === strGameId); if(v) { gameData = {...g, id: v.favoriteId, name: \`\${g.name} - \${v.name}\`, url: v.url, versions: undefined}; return true; } } return false; });
+                if (gameData) { favoritesHeader.style.display = "block"; favoritesGameList.style.display = "grid"; favoritesGameList.classList.add('grid', 'grid-cols-2', 'sm:grid-cols-3', 'md:grid-cols-5', 'lg:grid-cols-7', 'gap-4'); favoritesGameList.appendChild(createGameCard(gameData, true)); }
+            }
+        }
+        function updateAllFavoriteButtons() {
+            const favorites = getFavorites().map(String);
+            document.querySelectorAll('.btn-card-action.fav-action').forEach(btn => {
+                const card = btn.closest('.zone-item, .other-zone-item, .search-item'); if (!card) return;
+                const cardGameId = String(card.dataset.gameId);
+                if (btn.classList.contains('version-favorite-btn')) btn.classList.toggle('favorited', favorites.some(favId => favId.startsWith(cardGameId + '_')));
+                else btn.classList.toggle('favorited', favorites.includes(cardGameId));
+            });
+        }
+        
+        function normalizeGameName(name) { return name.toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9]/g, ""); }
+        async function fetchTopGames() {
+            try {
+                const response = await fetch(TOP_GAMES_URL); if (!response.ok) throw new Error("Network error");
+                const data = await response.json();
+                if (data && data.content) renderTopGames(JSON.parse(data.content));
+            } catch (e) { top20Section.style.display = 'none'; }
+        }
+        function renderTopGames(topData) {
+            top20GameList.innerHTML = ""; let foundCount = 0; const displayed = new Set(); const strongdogGames = allGames.filter(g => g.category === 'StrongdogXP');
+            for (let i = 0; i < topData.length && foundCount < 20; i++) {
+                const normalizedName = normalizeGameName(topData[i][0]);
+                const matchedGame = strongdogGames.find(g => normalizeGameName(g.name) === normalizedName);
+                if (matchedGame && !displayed.has(normalizedName)) { top20GameList.appendChild(createGameCard(matchedGame, true)); displayed.add(normalizedName); foundCount++; }
+            }
+            top20Section.style.display = (foundCount > 0 && categories[currentCategoryIndex] === 'StrongdogXP') ? 'block' : 'none';
+        }
+        
+        function getAdjustedUrls(imgSrc, page) { if (page && page > 1) return { adjustedImgSrc: \`../strongdog\${page}/img/\${imgSrc}\` }; return { adjustedImgSrc: \`./img/\${imgSrc}\` }; }
+        function sd_getBaseURLForPage(page) { const currentHost = window.location.host; const currentPath = window.location.pathname; if (currentHost === "forsimpleproblems.github.io" && currentPath.toLowerCase().startsWith('/strongdog/')) return page > 1 ? \`/strongdog\${page}/\` : "/STRONGDOG/"; return page > 1 ? \`../strongdog\${page}/\` : "./"; }
+        async function sd_getEmbedPath(adjustedHref, originalHref, page) {
+            let cleanHref = adjustedHref.replace(/index\.html$/, "").replace(/base\.html$/, "").replace(/\.html$/, ""); if (!cleanHref.endsWith("/")) cleanHref += "/";
+            const pathsToTry = [cleanHref + "game/index.html", cleanHref + "game/base.html", cleanHref + "gamereal/index.html", cleanHref + "gamereal/base.html", cleanHref + "index.html", cleanHref + "base.html", ];
+            try { const response = await fetch(adjustedHref); if (response.ok) { const text = await response.text(); const match = text.match(/embedGame\((['"])(.*?)\1,\s*(['"])(.*?)\3\)/); if (match) { const resolvedPath = new URL(match[2], adjustedHref).href; if (await sd_fileExists(resolvedPath)) return resolvedPath; } } } catch (error) {}
+            for (const path of pathsToTry) { if (await sd_fileExists(path)) return path; } return adjustedHref;
+        }
+        async function sd_fileExists(url) { try { const response = await fetch(url, { method: "HEAD" }); return response.ok; } catch { return false; } }
+
+        const othersGames = [
+            { id: "other-eaglercraft", name: "Eaglercraft", imgSrc: "./images/eaglercraft.png", description: "The classic survival and building game.", category: "Others", versions: [ { name: "Release 1.12.2", url: "../EAGLERCRAFT/eaglercraft-1.12.2.html", favoriteId: "other-eaglercraft_1.12.2" }, { name: "Release 1.12.2 WASM", url: "../EAGLERCRAFT/eaglercraft-1.12.2-wasm.html", favoriteId: "other-eaglercraft_wasm", wasm: true } ] },
+            { id: "other-gta", name: "Grand Theft Auto", imgSrc: "./images/gta.png", description: "The original top-down classic.", category: "Others", versions: [ { name: "Carnage3D", url: "../CARNAGE3D/web/carnage3D.html", favoriteId: "other-gta_carnage3d" }, { name: "Grand Theft Auto (JS-DOS)", url: "../GTA-JSDOS/index.html", favoriteId: "other-gta_jsdos" } ] },
+            { id: "other-simcity", name: "Sim City", imgSrc: "./images/simcity2000.png", description: "City-building classics.", category: "Others", versions: [ { name: "Sim City", url: "../SIM-CITY/index.html", favoriteId: "other-simcity_1" }, { name: "Sim City 2000", url: "../SIM-CITY-2/index.html", favoriteId: "other-simcity_2000" } ] },
+            { id: "other-doom", name: "DOOM", imgSrc: "./images/doom.png", description: "The legendary FPS.", category: "Others", url: "../DOOM/index.html" },
+            { id: "other-sm64", name: "Super Mario 64", imgSrc: "./images/sm64.png", description: "Iconic 3D platformer.", category: "Others", url: "../GAMES/sm64/index.html" }
+        ];
+
+        function createOthersGameCard(game) {
+            const favorites = getFavorites().map(String);
+            const isAnyFavorite = game.versions ? favorites.some(favId => game.versions.some(v => String(v.favoriteId) === favId)) : favorites.includes(String(game.id));
+            const card = document.createElement("div"); card.className = 'other-zone-item bg-card-dark rounded-2xl border border-brand-border col-span-full shadow-lg'; card.dataset.gameId = game.id;
+            let gameButtonsHtml = '', favoriteButtonHtml = '';
+            if (game.versions && game.versions.length > 0) {
+                if (game.versions.length === 1) gameButtonsHtml = \`<button class="btn-card-action play-action" data-url="\${game.versions[0].url}" data-version-name="\${game.versions[0].name}" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>\`;
+                else gameButtonsHtml = \`<div class="relative"><button class="btn-card-action version-btn" title="Select Version"><i class="fa-solid fa-chevron-up transition-colors"></i></button><div class="eagler-dropdown">\${game.versions.map(v => \`<a href="#" class="eagler-dropdown-link" data-url="\${v.url}" data-version-name="\${v.name}">\${v.name}</a>\`).join('')}</div></div>\`;
+                favoriteButtonHtml = \`<div class="relative"><button class="btn-card-action fav-action version-favorite-btn \${isAnyFavorite ? 'favorited' : ''}" title="Favorite a version"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button><div class="eagler-dropdown">\${game.versions.map(v => \`<a href="#" class="eagler-dropdown-link favorite-link" data-favorite-id="\${v.favoriteId}">\${v.name}</a>\`).join('')}</div></div>\`;
+            } else {
+                gameButtonsHtml = \`<button class="btn-card-action play-action" data-url="\${game.url}" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>\`;
+                favoriteButtonHtml = \`<button class="btn-card-action fav-action \${isAnyFavorite ? 'favorited' : ''}" title="\${isAnyFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button>\`;
+            }
+            card.innerHTML = \`<div class="relative w-full h-full cursor-pointer group" style="min-height: 250px;"><img data-src="\${game.imgSrc}" alt="\${game.name}" loading="lazy" decoding="async" class="w-full h-full object-cover absolute inset-0 rounded-2xl"><div class="image-overlay absolute inset-0 transition-colors duration-200"></div><div class="absolute inset-0 p-4 sm:p-6 flex flex-col justify-between rounded-2xl"><div class="flex items-start justify-between w-full"><h3 class="text-4xl font-bold text-white truncate drop-shadow-lg" style="max-width: 80%;" title="\${game.name}">\${game.name}</h3><div class="flex items-center space-x-3 bg-black/80 backdrop-blur-md rounded-xl px-2 py-1">\${gameButtonsHtml}\${favoriteButtonHtml}</div></div><p class="text-lg text-white font-medium drop-shadow-lg" style="max-width: 50%;">\${game.description}</p></div></div>\`;
+            if (!game.versions) card.querySelector('.group').addEventListener('click', () => openZone(game));
+            card.querySelectorAll('.play-action').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); openZone({ ...game, name: btn.dataset.versionName ? \`\${game.name} - \${btn.dataset.versionName}\` : game.name, url: btn.dataset.url }); }));
+            const versionBtn = card.querySelector('.version-btn'); if (versionBtn) versionBtn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.eagler-dropdown.show').forEach(d => d.classList.remove('show')); versionBtn.nextElementSibling.classList.toggle('show'); });
+            card.querySelectorAll('.eagler-dropdown-link:not(.favorite-link)').forEach(link => link.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openZone({ ...game, name: link.dataset.versionName ? \`\${game.name} - \${link.dataset.versionName}\` : game.name, url: link.dataset.url }); link.closest('.eagler-dropdown').classList.remove('show'); }));
+            const favBtn = card.querySelector('.btn-card-action.fav-action');
+            if (favBtn.classList.contains('version-favorite-btn')) { favBtn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.eagler-dropdown.show').forEach(d => d.classList.remove('show')); favBtn.nextElementSibling.classList.toggle('show'); }); card.querySelectorAll('.favorite-link').forEach(link => link.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(link.dataset.favoriteId); link.closest('.eagler-dropdown').classList.remove('show'); })); } else favBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleFavorite(game.id); });
+            imageObserver.observe(card.querySelector('img')); return card;
+        }
+
+        function createGameCard(game, forceSmallCard = false) {
+            if (game.category === 'Others' && !forceSmallCard) return createOthersGameCard(game);
+            const isStrongdog = game.category === 'StrongdogXP';
+            let imgSrc = isStrongdog ? getAdjustedUrls(game.imgSrc, game.page).adjustedImgSrc : game.imgSrc;
+            const isFavorite = getFavorites().map(String).includes(String(game.id));
+            const card = document.createElement("div"); card.className = 'zone-item bg-card-dark rounded-2xl border border-brand-border overflow-hidden'; card.dataset.gameId = game.id;
+            card.innerHTML = \`<div class="relative w-full cursor-pointer group"><div class="aspect-w-3 aspect-h-2"><img data-src="\${imgSrc}" alt="\${game.name}" class="w-full h-full object-cover"></div><h3 class="absolute top-2 right-2 z-10 max-w-[80%] bg-black/60 backdrop-blur-md rounded-xl px-3 py-1.5 text-white truncate text-sm font-semibold shadow-lg" title="\${game.name}">\${game.name}</h3><div class="absolute bottom-2 right-2 bg-black/80 backdrop-blur-md rounded-xl px-2 py-1 flex items-center space-x-2 shadow-lg"><button class="btn-card-action play-action" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button><button class="btn-card-action fav-action \${isFavorite ? 'favorited' : ''}" title="\${isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button></div></div>\`;
+            const handlePlay = async (e) => { e.stopPropagation(); if (isStrongdog) { const baseURL = sd_getBaseURLForPage(game.page); let adjustedHref = baseURL.endsWith("/") ? baseURL + game.href.replace(/^\.\//, "") : baseURL + "/" + game.href.replace(/^\.\//, ""); const embedPath = await sd_getEmbedPath(adjustedHref, game.href, game.page); openZone({ name: game.name, url: embedPath, category: game.category, id: game.id }); } else { openZone(game); } };
+            card.querySelector('.group').addEventListener('click', handlePlay); card.querySelector('.play-action').addEventListener('click', handlePlay); card.querySelector('.fav-action').addEventListener('click', (e) => { e.stopPropagation(); toggleFavorite(game.id); });
+            imageObserver.observe(card.querySelector('img')); return card;
+        }
+
+        function openZone(game) {
+            if (!game || !game.url) return;
+            updateURL(categories[currentCategoryIndex], game.id || null);
+            const zoneViewer = document.getElementById('zoneViewer'); const zoneFrame = document.getElementById('zoneFrame');
+            const downloadBtn = document.getElementById('downloadBtnZone');
+            if (game.baseGameId === 'other-eaglercraft' || game.id === 'other-eaglercraft') { downloadBtn.href = game.url; downloadBtn.download = game.name.replace(/ /g, '_') + '.html'; downloadBtn.removeAttribute('target'); downloadBtn.classList.remove('hidden'); } else { downloadBtn.classList.add('hidden'); downloadBtn.href = '#'; downloadBtn.removeAttribute('download'); }
+            document.getElementById('zoneNameEl').textContent = game.name;
+            zoneFrame.src = 'about:blank';
+            const sandboxRules = 'allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-fullscreen'; zoneFrame.setAttribute('sandbox', sandboxRules); zoneFrame.setAttribute('allow', 'fullscreen; pointer-lock; autoplay; clipboard-write');
+            const isURLBasedGame = game.category === 'StrongdogXP' || game.category === 'Others';
+            if (isURLBasedGame) { zoneFrame.src = game.url; zoneViewer.style.display = "flex"; }
+            else { fetch(\`\${game.url}?t=\${Date.now()}\`).then(r => r.ok?r.text():Promise.reject(r.status)).then(html => { const doc = zoneFrame.contentWindow.document; doc.open(); doc.write(html); doc.close(); zoneViewer.style.display = "flex"; }).catch(e => { zoneFrame.src = game.url; zoneViewer.style.display = "flex"; }); }
+        }
+
+        function closeZoneViewer() { updateURL(categories[currentCategoryIndex]); document.getElementById('downloadBtnZone').classList.add('hidden'); document.getElementById('zoneViewer').style.display = "none"; document.getElementById('zoneFrame').src = 'about:blank'; }
+
+        function renderGames(gamesToRender, targetElement, forceSmallCard = false) { targetElement.innerHTML = ''; targetElement.className = (categories[currentCategoryIndex] === 'Others' && !forceSmallCard) ? 'grid grid-cols-1 gap-6 mt-6' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-4 mt-6'; gamesToRender.forEach(game => targetElement.appendChild(createGameCard(game, forceSmallCard))); observeImages(targetElement); }
+        function renderFavorites() { const favoriteIds = getFavorites().map(String); if (favoriteIds.length > 0) { favoritesHeader.style.display = "block"; favoritesGameList.style.display = "grid"; const favoriteGames = []; allGames.forEach(game => { if (favoriteIds.includes(String(game.id)) && !game.versions) favoriteGames.push(game); else if (game.versions) game.versions.forEach(v => { if (favoriteIds.includes(String(v.favoriteId))) favoriteGames.push({ ...game, id: v.favoriteId, name: \`\${game.name} - \${v.name}\`, url: v.url, versions: undefined }); }); }); renderGames(favoriteGames.sort((a, b) => a.name.localeCompare(b.name)), favoritesGameList, true); } else { favoritesHeader.style.display = "none"; favoritesGameList.style.display = "none"; } }
+
+        function switchCategory(newIndex) { currentCategoryIndex = newIndex; categorySlider.style.transform = \`translateX(-\${currentCategoryIndex * (100 / categories.length)}%)\`; renderGamesForCurrentCategory(); prevCategoryBtn.disabled = currentCategoryIndex === 0; nextCategoryBtn.disabled = currentCategoryIndex === categories.length - 1; updateURL(categories[currentCategoryIndex]); top20Section.style.display = (categories[currentCategoryIndex] === 'StrongdogXP') ? 'block' : 'none'; }
+        async function renderGamesForCurrentCategory() { const categoryName = categories[currentCategoryIndex]; gamesGridContainer.classList.add('opacity-0'); await new Promise(r => setTimeout(r, 150)); renderGames(allGames.filter(g => g.category === categoryName), gamesGridContainer, false); gamesGridContainer.classList.remove('opacity-0'); }
+
+        const handleSearch = (() => { let t; return () => { clearTimeout(t); t = setTimeout(() => { const text = searchInput.value.toLowerCase().trim(); const filtered = text ? searchableGames.filter(g => g.name.toLowerCase().includes(text)).slice(0, 5) : []; searchResults.innerHTML = ""; if (!filtered.length || !text) { searchResults.style.display = "none"; searchDivider.style.display = "none"; return; } const favs = getFavorites().map(String); filtered.forEach(game => { const isStrongdog = game.category === 'StrongdogXP'; const imgSrc = isStrongdog ? getAdjustedUrls(game.imgSrc, game.page).adjustedImgSrc : game.imgSrc; const isFav = favs.includes(String(game.id)); const el = document.createElement("a"); el.href = '#'; el.className = 'search-item flex justify-between items-center'; el.innerHTML = \`<div class="flex items-center truncate min-w-0"><img src="\${imgSrc}" alt="\${game.name}" class="w-10 h-10 rounded-lg object-cover flex-shrink-0"><span class="ml-3 font-medium truncate text-gray-200" title="\${game.name}">\${game.name}</span></div><div class="flex items-center flex-shrink-0"><div class="bg-black/80 backdrop-blur-md rounded-xl px-2 py-1 flex items-center space-x-2"><button class="btn-card-action play-action"><i class="fa-solid fa-play transition-colors"></i></button><button class="btn-card-action fav-action \${isFav ? 'favorited' : ''}"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button></div></div>\`; el.querySelector('.fav-action').addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(game.id); }); el.addEventListener('click', async (e) => { e.preventDefault(); if (isStrongdog) { const baseURL = sd_getBaseURLForPage(game.page); let adjustedHref = baseURL.endsWith("/") ? baseURL + game.href.replace(/^\.\//, "") : baseURL + "/" + game.href.replace(/^\.\//, ""); const embedPath = await sd_getEmbedPath(adjustedHref, game.href, game.page); openZone({ name: game.name, url: embedPath, category: game.category, id: game.id }); } else openZone(game); searchResults.style.display = "none"; searchDivider.style.display = "none"; }); searchResults.appendChild(el); }); searchResults.style.display = "block"; searchDivider.style.display = "block"; }, 250); } })();
+
+        async function initializeApp() {
+            const strongdogGames = games.map(g => ({ ...g, category: 'StrongdogXP' }));
+            try { const res = await fetch(GN_ZONES_URL); const gnMathRaw = await res.json(); const gnMathGames = gnMathRaw.map(g => ({ id: \`gn-\${g.id}\`, name: g.name, imgSrc: g.cover.replace("{COVER_URL}", GN_COVER_URL_BASE), category: 'GN-Math', url: g.url.replace("{HTML_URL}", GN_HTML_URL_BASE) })); allGames = [...strongdogGames, ...gnMathGames, ...othersGames]; } catch (error) { allGames = [...strongdogGames, ...othersGames]; }
+            allGames = allGames.filter(g => !['bitlife', 'soundboard'].some(term => g.name.toLowerCase().includes(term)));
+            searchableGames = []; allGames.forEach(game => { if (game.versions) game.versions.forEach(v => searchableGames.push({ ...game, id: v.favoriteId, name: \`\${game.name} - \${v.name}\`, url: v.url, wasm: v.wasm, versions: undefined, baseGameId: game.id })); else searchableGames.push(game); });
+            categories = ['StrongdogXP', 'GN-Math', 'Gameboy Games', 'Others'].filter(cat => allGames.some(g => g.category === cat));
+            const { category: urlCat } = parseURL(); if (urlCat) currentCategoryIndex = Math.max(0, categories.findIndex(c => c.replace(/\s+/g, '-').toLowerCase() === urlCat.toLowerCase()));
+            categorySlider.style.width = \`\${categories.length * 100}%\`; categorySlider.innerHTML = categories.map(cat => \`<div class="w-64 flex-shrink-0"><h2 class="text-3xl font-bold \${categoryColors[cat] || 'text-white'}"><strong>\${cat}</strong></h2></div>\`).join('');
+            switchCategory(currentCategoryIndex); renderFavorites(); await fetchTopGames(); setupInstructionOverlay();
+            searchInput.addEventListener("input", handleSearch); searchInput.addEventListener("focus", handleSearch);
+            document.addEventListener("click", ev => { if (!document.getElementById('bottom-fixed-bar').contains(ev.target)) { searchResults.style.display = "none"; searchDivider.style.display = "none"; } if (!ev.target.closest('.version-btn') && !ev.target.closest('.version-favorite-btn') && !ev.target.closest('.eagler-dropdown')) document.querySelectorAll('.eagler-dropdown.show').forEach(d => d.classList.remove('show')); });
+            prevCategoryBtn.addEventListener('click', () => switchCategory(currentCategoryIndex - 1)); nextCategoryBtn.addEventListener('click', () => switchCategory(currentCategoryIndex + 1));
+            document.getElementById('closeBtnZone').addEventListener('click', closeZoneViewer);
+            document.getElementById('fullscreenBtnZone').addEventListener('click', () => { const f = document.getElementById('zoneFrame'); if (f.requestFullscreen) f.requestFullscreen(); else if (f.webkitRequestFullscreen) f.webkitRequestFullscreen(); });
+            creditsBtn.addEventListener('click', () => { creditsModal.style.display = 'flex'; creditsContent.innerHTML = categories.map(cat => CREDITS_DATA[cat] ? \`<div class="p-4 border border-brand-border rounded-lg"><h4 class="font-bold mb-1">\${cat}</h4><p class="text-sm text-gray-400">\${CREDITS_DATA[cat].credit}</p></div>\` : '').join(''); });
+            closeCreditsBtn.addEventListener('click', () => creditsModal.style.display = 'none');
+        }
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    <\/script>
+</body>
+</html>
+        `;
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const lockScreen = document.getElementById('lock-screen');
+        const navbar = document.getElementById('navbar-container');
+        let appFrame = document.getElementById('app-frame');
+        const codeInput = document.getElementById('codeInput');
+        const unlockBtn = document.getElementById('unlockBtn');
+        const lockMessage = document.getElementById('lockMessage');
+        const loadingText = document.getElementById('loading-text');
+        
+        // Navbar elements
+        const tabsContainer = document.getElementById('tabs-container');
+        
+        // Pin Elements
+        const pinWrapper = document.getElementById('pin-wrapper');
+        const pinBtn = document.getElementById('pin-btn');
+        const pinMenu = document.getElementById('pin-menu');
+        const repinBtn = document.getElementById('repin-btn');
+        const removePinBtn = document.getElementById('remove-pin-btn');
+        const hidePinBtn = document.getElementById('hide-pin-btn');
+        const showPinMenuItem = document.getElementById('show-pin-menu-item');
+
+        // Auth Elements
+        const authBtn = document.getElementById('auth-btn');
+        const authMenu = document.getElementById('auth-menu');
+        const logoutBtn = document.getElementById('logout-btn');
+        const displayUsername = document.getElementById('display-username');
+        const displayEmail = document.getElementById('display-email');
+
+        const BASE_URL = 'https://cdn.jsdelivr.net/npm/4sp-dv@latest/logged-in/';
+        const STORAGE_KEY = 'local_access_code';
+        const PINNED_PAGE_KEY = 'local_pinned_page';
+        const PIN_HIDDEN_KEY = 'local_pin_hidden';
+        const USER_DATA_KEY = 'local_user_data';
+        const LAST_PAGE_KEY = 'local_last_page';
+
+        const PAGE_DATA = {
+            "dashboard": { "name": "Dashboard", "icon": "fa-solid fa-house-user", "url": "dashboard.html" },
+            "soundboard": { "name": "Soundboard", "icon": "fa-solid fa-volume-up", "url": "soundboard.html" },
+            "notes": { "name": "Notes", "icon": "fa-solid fa-sticky-note", "url": "notes.html" },
+            "dailyphoto": { "name": "Dailyphoto", "icon": "fa-solid fa-image", "url": "dailyphoto.html" },
+            "countdowns": { "name": "Countdowns", "icon": "fa-solid fa-clock", "url": "countdowns.html" },
+            "weather": { "name": "Weather", "icon": "fa-solid fa-cloud-sun", "url": "weather.html" },
+            "dictionary": { "name": "Dictionary", "icon": "fa-solid fa-book", "url": "dictionary.html" },
+            "messenger-v2": { "name": "Messenger", "icon": "fa-solid fa-comments", "url": "messenger-tutorial.html" },
+            "games": { "name": "GAMES", "icon": "fa-solid fa-gamepad", "url": "games.html" },
+            "settings": { "name": "Settings", "icon": "fa-solid fa-gear", "url": "settings.html" }
+        };
+
+        let currentUser = null;
+
+        // --- Navbar Logic ---
+        function renderNavbar(activePageUrl) {
+            const tabsContainerEl = document.getElementById('tabs-container');
+            const pinBtnEl = document.getElementById('pin-btn');
+            const pinWrapperEl = document.getElementById('pin-wrapper');
+            const showPinMenuItemEl = document.getElementById('show-pin-menu-item');
+
+            if (!tabsContainerEl) return;
+            tabsContainerEl.innerHTML = '';
+            
+            let currentPath = activePageUrl.replace(BASE_URL, '');
+            
+            Object.values(PAGE_DATA).forEach(page => {
+                const isAuth = page.url === currentPath;
+                const tab = document.createElement('a');
+                tab.className = `nav-tab ${isAuth ? 'active' : ''}`;
+                tab.innerHTML = `<i class="${page.icon}"></i> ${page.name}`;
+                tab.onclick = () => loadPage(page.url);
+                tabsContainerEl.appendChild(tab);
+            });
+
+            // Update Pin Button State
+            const pinned = localStorage.getItem(PINNED_PAGE_KEY);
+            if (pinBtnEl) {
+                if (pinned && pinned === currentPath) {
+                    pinBtnEl.style.color = '#4f46e5';
+                } else {
+                    pinBtnEl.style.color = '#d1d5db';
+                }
+            }
+
+            // Update Pin Visibility
+            const isHidden = localStorage.getItem(PIN_HIDDEN_KEY) === 'true';
+            if (isHidden) {
+                if (pinWrapperEl) pinWrapperEl.classList.add('hidden');
+                if (showPinMenuItemEl) {
+                    showPinMenuItemEl.classList.remove('hidden');
+                    showPinMenuItemEl.onclick = () => {
+                        localStorage.setItem(PIN_HIDDEN_KEY, 'false');
+                        renderNavbar(activePageUrl);
+                    };
+                }
+            } else {
+                if (pinWrapperEl) pinWrapperEl.classList.remove('hidden');
+                if (showPinMenuItemEl) showPinMenuItemEl.classList.add('hidden');
+            }
+        }
+
+        // --- Pin Logic ---
+        function getCurrentPage() {
+            const currentFrameSrc = appFrame.contentWindow.location.href;
+            let pageName = currentFrameSrc.replace(BASE_URL, '');
+            if (!pageName || pageName === 'about:blank') pageName = window.lastLoadedPage || 'dashboard.html';
+            return pageName;
+        }
+
+        // Pin Button
+        if (pinBtn) {
+            pinBtn.addEventListener('click', () => {
+                const pageName = getCurrentPage();
+                const currentPinned = localStorage.getItem(PINNED_PAGE_KEY);
+                
+                if (currentPinned === pageName) {
+                    localStorage.removeItem(PINNED_PAGE_KEY);
+                } else {
+                    localStorage.setItem(PINNED_PAGE_KEY, pageName);
+                }
+                renderNavbar(pageName);
+            });
+
+            // Context Menu
+            pinBtn.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                if (pinMenu) pinMenu.classList.toggle('open');
+                if (authMenu) authMenu.classList.remove('open');
+            });
+        }
+
+        if (repinBtn) {
+            repinBtn.addEventListener('click', () => {
+                localStorage.setItem(PINNED_PAGE_KEY, getCurrentPage());
+                renderNavbar(getCurrentPage());
+                if (pinMenu) pinMenu.classList.remove('open');
+            });
+        }
+
+        if (removePinBtn) {
+            removePinBtn.addEventListener('click', () => {
+                localStorage.removeItem(PINNED_PAGE_KEY);
+                renderNavbar(getCurrentPage());
+                if (pinMenu) pinMenu.classList.remove('open');
+            });
+        }
+
+        if (hidePinBtn) {
+            hidePinBtn.addEventListener('click', () => {
+                localStorage.setItem(PIN_HIDDEN_KEY, 'true');
+                renderNavbar(getCurrentPage());
+                if (pinMenu) pinMenu.classList.remove('open');
+            });
+        }
+
+        // Auth Menu
+        if (authBtn) {
+            authBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (authMenu) authMenu.classList.toggle('open');
+                if (pinMenu) pinMenu.classList.remove('open');
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (authMenu && authBtn && !authMenu.contains(e.target) && !authBtn.contains(e.target)) {
+                authMenu.classList.remove('open');
+            }
+            if (pinMenu && pinBtn && !pinMenu.contains(e.target) && !pinBtn.contains(e.target)) {
+                pinMenu.classList.remove('open');
+            }
+        });
+
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem(STORAGE_KEY);
+                localStorage.removeItem(USER_DATA_KEY);
+                location.reload();
+            });
+        }
+
+        async function fetchUserData(ownerUid) {
+            try {
+                const userDoc = await getDoc(doc(db, "users", ownerUid));
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    const userData = {
+                        uid: ownerUid,
+                        username: data.username || "User",
+                        email: data.email || "No email"
+                    };
+                    localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
+                    updateUIWithUser(userData);
+                    currentUser = userData; // Set global
+                }
+            } catch (e) {
+                console.error("Error fetching user data:", e);
+            }
+        }
+
+        function updateUIWithUser(userData) {
+            if (!userData) return;
+            displayUsername.textContent = userData.username;
+            displayEmail.textContent = userData.email;
+            
+            // Profile Picture Logic
+            const pfpType = userData.pfpType || 'letter';
+            let pfpHtml = '';
+            
+            if (pfpType === 'custom' && userData.customPfp) {
+                pfpHtml = `<img src="${userData.customPfp}" class="w-full h-full object-cover rounded-full" alt="Profile">`;
+            } else {
+                // Letter Avatar
+                const letter = (userData.username || 'U').charAt(0).toUpperCase();
+                const bgColor = userData.pfpLetterBg || '#3B82F6'; // Default blue
+                pfpHtml = `<div class="w-full h-full rounded-full flex items-center justify-center text-white font-bold text-lg" style="background-color: ${bgColor};">${letter}</div>`;
+            }
+            
+            authBtn.innerHTML = pfpHtml;
+            authBtn.style.padding = '0'; // Remove padding to let avatar fill
+            authBtn.style.overflow = 'hidden'; // Ensure roundness
+            authBtn.style.border = '1px solid #4b5563'; // Maintain border
+        }
+
+        // --- Auto-Login Logic ---
+        async function checkAutoLogin() {
+            const savedCode = localStorage.getItem(STORAGE_KEY);
+            if (savedCode) {
+                loadingText.classList.remove('hidden');
+                unlockBtn.classList.add('hidden');
+                codeInput.classList.add('hidden');
+                
+                try {
+                    const docRef = doc(db, "access_codes", savedCode);
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists() && docSnap.data().active) {
+                        const codeData = docSnap.data();
+                        
+                        // Check for cached user data first
+                        let userData = null;
+                        try {
+                            userData = JSON.parse(localStorage.getItem(USER_DATA_KEY));
+                        } catch(e){}
+
+                        if (userData && userData.uid === codeData.ownerUid) {
+                             updateUIWithUser(userData);
+                             currentUser = userData;
+                        } else if (codeData.ownerUid) {
+                            await fetchUserData(codeData.ownerUid);
+                        }
+
+                        launchApp();
+                        return;
+                    } else {
+                        localStorage.removeItem(STORAGE_KEY);
+                        resetLockScreen("Session expired. Please enter code again.");
+                    }
+                } catch(e) {
+                    console.error("Auto-login error:", e);
+                    resetLockScreen("Connection failed. Retrying...");
+                }
+            }
+        }
+
+        function resetLockScreen(msg) {
+            loadingText.classList.add('hidden');
+            unlockBtn.classList.remove('hidden');
+            codeInput.classList.remove('hidden');
+            lockMessage.innerText = msg || "";
+        }
+
+        // --- Unlock Logic ---
+        unlockBtn.addEventListener('click', async () => {
+            let code = codeInput.value.trim().toUpperCase();
+            code = code.replace(/-/g, '');
+
+            if (code.length !== 12) {
+                lockMessage.innerText = "Invalid code format (12 characters).";
+                return;
+            }
+
+            lockMessage.innerText = "";
+            unlockBtn.disabled = true;
+            unlockBtn.innerText = "Checking...";
+
+            try {
+                const docRef = doc(db, "access_codes", code);
+                const docSnap = await getDoc(docRef);
+
+                if (!docSnap.exists()) {
+                    throw new Error("Code not found.");
+                }
+
+                const data = docSnap.data();
+
+                if (data.claimed) {
+                    if (localStorage.getItem(STORAGE_KEY) === code) {
+                        launchApp();
+                        return;
+                    }
+                    throw new Error("This code is already in use.");
+                }
+
+                if (!data.active) {
+                    throw new Error("Code is inactive.");
+                }
+
+                // Claim it!
+                await updateDoc(docRef, { claimed: true });
+                localStorage.setItem(STORAGE_KEY, code);
+                
+                // Fetch User Data immediately
+                if (data.ownerUid) {
+                    await fetchUserData(data.ownerUid);
+                }
+
+                launchApp();
+
+            } catch (e) {
+                lockMessage.innerText = e.message;
+                unlockBtn.disabled = false;
+                unlockBtn.innerText = "Login";
+            }
+        });
+
+        function launchApp() {
+            const lockScreenEl = document.getElementById('lock-screen');
+            const navbarEl = document.getElementById('navbar-container');
+            const appFrameEl = document.getElementById('app-frame');
+
+            if (lockScreenEl) lockScreenEl.classList.add('hidden');
+            if (navbarEl) navbarEl.style.display = 'flex';
+            if (appFrameEl) appFrameEl.style.display = 'block';
+            
+            // Determine start page
+            let startPage = 'dashboard.html';
+            const lastPage = localStorage.getItem(LAST_PAGE_KEY);
+            const pinned = localStorage.getItem(PINNED_PAGE_KEY);
+            
+            // Priority: Last Page > Pinned > Default
+            if (lastPage) {
+                 const isValid = Object.values(PAGE_DATA).some(p => p.url === lastPage);
+                 if (isValid) startPage = lastPage;
+            } else if (pinned) {
+                const isValid = Object.values(PAGE_DATA).some(p => p.url === pinned);
+                if (isValid) startPage = pinned;
+            }
+            
+            loadPage(startPage);
+            
+            // --- Apply Saved Theme on Startup ---
+            try {
+                const savedThemeRaw = localStorage.getItem('user-navbar-theme');
+                if (savedThemeRaw) {
+                    const savedTheme = JSON.parse(savedThemeRaw);
+                    applyTheme(savedTheme);
+                }
+            } catch(e) { console.error("Error applying saved theme:", e); }
+        }
+
+        // --- Page Loader ---
+        window.loadPage = function(pageName) {
+            // Intercept Settings
+            if (pageName === 'settings.html' || pageName === 'settings') {
+                window.lastLoadedPage = 'settings.html';
+                localStorage.setItem(LAST_PAGE_KEY, 'settings.html');
+                renderNavbar(BASE_URL + 'settings.html');
+                openSettings();
+                return;
+            }
+            
+            // Close Settings if open
+            const settingsOverlay = document.getElementById('settings-overlay');
+            if (settingsOverlay) settingsOverlay.classList.add('hidden');
+
+            // Normalize path
+            if (pageName.startsWith('./')) pageName = pageName.substring(2);
+            if (pageName.startsWith('../')) pageName = pageName.substring(3);
+            if (pageName.startsWith(BASE_URL)) pageName = pageName.substring(BASE_URL.length);
+
+            window.lastLoadedPage = pageName;
+            localStorage.setItem(LAST_PAGE_KEY, pageName);
+            renderNavbar(pageName);
+
+            // --- INTERCEPT GAMES PAGE ---
+            if (pageName === 'games.html' || pageName === 'games') {
+                const workerBaseUrl = "https://dv-service-lfs.4simpleproblems.workers.dev/";
+                
+                // Replace relative paths with Worker paths
+                // This converts "../" to the worker root
+                let processedHtml = GAMES_PAGE_CONTENT.replace(/\.\.\//g, workerBaseUrl);
+                
+                // --- INJECT ---
+                const oldFrame = document.getElementById('app-frame');
+                const newFrame = document.createElement('iframe');
+                newFrame.id = 'app-frame';
+                
+                if (oldFrame) {
+                    newFrame.style.cssText = oldFrame.style.cssText;
+                    if (oldFrame.parentNode) oldFrame.parentNode.replaceChild(newFrame, oldFrame);
+                } else {
+                    newFrame.style.width = '100%'; newFrame.style.height = '100%'; newFrame.style.border = 'none'; newFrame.style.display = 'block'; newFrame.style.flexGrow = '1';
+                    document.body.appendChild(newFrame);
+                }
+                appFrame = newFrame; 
+
+                const doc = newFrame.contentWindow.document;
+                doc.open();
+                doc.write(processedHtml);
+                doc.close();
+                return;
+            }
+
+            const url = BASE_URL + pageName;
+            
+            fetch(url)
+                .then(res => res.text())
+                .then(html => {
+                    const oldFrame = document.getElementById('app-frame');
+                    const newFrame = document.createElement('iframe');
+                    newFrame.id = 'app-frame';
+                    
+                    if (oldFrame) {
+                        newFrame.style.cssText = oldFrame.style.cssText;
+                        if (oldFrame.parentNode) oldFrame.parentNode.replaceChild(newFrame, oldFrame);
+                    } else {
+                        newFrame.style.width = '100%'; newFrame.style.height = '100%'; newFrame.style.border = 'none'; newFrame.style.display = 'block'; newFrame.style.flexGrow = '1';
+                        document.body.appendChild(newFrame);
+                    }
+                    
+                    appFrame = newFrame; 
+
+                    const doc = newFrame.contentWindow.document;
+                    doc.open();
+                    
+                    const baseTag = '<base href="' + BASE_URL + '">';
+                    
+                    const patchScript = `
+                        <script>
+                            window._LOCAL_MODE = true;
+                            window._CURRENT_PAGE_NAME = "${pageName}";
+                            
+                            window.currentUser = {
+                                uid: '${currentUser ? currentUser.uid : "client-user"}',
+                                displayName: '${currentUser ? currentUser.username : "Client User"}',
+                                email: '${currentUser ? currentUser.email : "local@client"}',
+                                photoURL: null,
+                                providerData: []
+                            };
+
+                            window.openSettings = function() { window.parent.openSettings(); };
+
+                            document.addEventListener('click', e => {
+                                const link = e.target.closest('a');
+                                if (link && link.href) {
+                                    const href = link.getAttribute('href');
+                                    if (href.includes('settings.html') || href === '#settings') {
+                                        e.preventDefault();
+                                        window.parent.openSettings();
+                                        return;
+                                    }
+                                    e.preventDefault();
+                                    window.parent.loadPage(href);
+                                }
+                            });
+                        <\/script>
+                    `;
+                    
+                    let modifiedHtml = html.replace('<head>', '<head>' + baseTag + patchScript);
+                    doc.write(modifiedHtml);
+                    doc.close();
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Failed to load page: " + pageName);
+                });
+        };
+
+        // --- Settings Logic ---
+        const settingsOverlay = document.getElementById('settings-overlay');
+        const closeSettingsBtn = document.getElementById('close-settings-btn');
+        const settingsTabs = document.querySelectorAll('.settings-tab');
+        const settingsSections = document.querySelectorAll('.settings-section');
+        
+        window.openSettings = function() {
+            settingsOverlay.classList.remove('hidden');
+            loadSettingsData();
+        };
+        
+        function closeSettings() {
+            settingsOverlay.classList.add('hidden');
+        }
+        
+        closeSettingsBtn.addEventListener('click', closeSettings);
+        
+        // Tab Switching
+        settingsTabs.forEach(btn => {
+            btn.addEventListener('click', () => {
+                settingsTabs.forEach(b => { b.classList.remove('active', 'text-white', 'bg-[#1a1a1a]'); b.classList.add('text-gray-300'); });
+                btn.classList.add('active', 'text-white', 'bg-[#1a1a1a]'); btn.classList.remove('text-gray-300');
+                const tabId = btn.dataset.tab;
+                settingsSections.forEach(sec => { if (sec.id === `tab-${tabId}`) sec.classList.remove('hidden'); else sec.classList.add('hidden'); });
+            });
+        });
+
+        // --- Settings Data & Actions ---
+        
+        // --- 1. General: Username ---
+        const settingsUsernameInput = document.getElementById('settings-username-input');
+        const saveUsernameBtn = document.getElementById('save-username-btn');
+        const usernameMsg = document.getElementById('username-msg');
+        
+        async function checkProfanity(text) { try { const res = await fetch(`https://www.purgomalum.com/service/containsprofanity?text=${encodeURIComponent(text)}`); return (await res.text()) === 'true'; } catch { return false; } }
+
+        saveUsernameBtn.addEventListener('click', async () => {
+            if (!currentUser) return;
+            const newName = settingsUsernameInput.value.trim();
+            usernameMsg.innerText = "Checking...";
+            usernameMsg.className = "text-gray-500 text-xs mt-2 min-h-[20px]";
+            
+            if (newName.length < 3 || newName.length > 20) { usernameMsg.innerText = "Username must be 3-20 characters."; usernameMsg.className = "text-red-400 text-xs mt-2 min-h-[20px]"; return; }
+            if (await checkProfanity(newName)) { usernameMsg.innerText = "Username not allowed."; usernameMsg.className = "text-red-400 text-xs mt-2 min-h-[20px]"; return; }
+            
+            try {
+                const q = query(collection(db, "users"), where("username", "==", newName));
+                const snap = await getDocs(q);
+                if (!snap.empty && snap.docs[0].id !== currentUser.uid) { usernameMsg.innerText = "Username taken."; usernameMsg.className = "text-red-400 text-xs mt-2 min-h-[20px]"; return; }
+                await updateDoc(doc(db, "users", currentUser.uid), { username: newName });
+                currentUser.username = newName;
+                localStorage.setItem(USER_DATA_KEY, JSON.stringify(currentUser));
+                updateUIWithUser(currentUser);
+                usernameMsg.innerText = "Saved!"; usernameMsg.className = "text-green-400 text-xs mt-2 min-h-[20px]";
+            } catch (e) { console.error(e); usernameMsg.innerText = "Error saving."; usernameMsg.className = "text-red-400 text-xs mt-2 min-h-[20px]"; }
+        });
+
+        // --- 2. Personalization ---
+        const letterColors = ['EF4444', 'F97316', 'F59E0B', '84CC16', '10B981', '06B6D4', '3B82F6', '6366F1', '8B5CF6', 'EC4899', '6B7280'];
+        const pfpModeBtns = document.querySelectorAll('.pfp-mode-btn');
+        const pfpLetterOptions = document.getElementById('pfp-letter-options');
+        const pfpUploadOptions = document.getElementById('pfp-upload-options');
+        const pfpPreview = document.getElementById('pfp-preview');
+        const saveLetterPfpBtn = document.getElementById('save-letter-pfp-btn');
+        let pfpState = { mode: 'letter', letterColor: '#3B82F6' };
+
+        pfpModeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                pfpModeBtns.forEach(b => b.classList.remove('active', 'bg-[#222]'));
+                btn.classList.add('active', 'bg-[#222]');
+                const mode = btn.dataset.mode; pfpState.mode = mode;
+                if (mode === 'letter') { pfpLetterOptions.classList.remove('hidden'); pfpUploadOptions.classList.add('hidden'); updatePfpPreview(); } 
+                else { pfpLetterOptions.classList.add('hidden'); pfpUploadOptions.classList.remove('hidden'); }
+            });
+        });
+        
+        const gridContainer = pfpLetterOptions.querySelector('.grid');
+        gridContainer.innerHTML = '';
+        letterColors.forEach(color => {
+            const div = document.createElement('div'); div.className = 'w-8 h-8 rounded-full cursor-pointer hover:scale-110 transition border-2 border-transparent'; div.style.backgroundColor = '#' + color;
+            div.onclick = () => { pfpState.letterColor = '#' + color; updatePfpPreview(); }; gridContainer.appendChild(div);
+        });
+
+        function updatePfpPreview() {
+            if (pfpState.mode === 'letter') {
+                const initial = currentUser ? (currentUser.username || "U").charAt(0).toUpperCase() : "U";
+                pfpPreview.style.backgroundImage = 'none'; pfpPreview.style.backgroundColor = pfpState.letterColor; pfpPreview.innerText = initial;
+            }
+        }
+        
+        saveLetterPfpBtn.addEventListener('click', async () => {
+            if (!currentUser) return;
+            saveLetterPfpBtn.innerText = "Saving...";
+            try {
+                await updateDoc(doc(db, "users", currentUser.uid), { pfpType: 'letter', pfpLetterBg: pfpState.letterColor, letterAvatarColor: pfpState.letterColor });
+                currentUser.pfpType = 'letter'; currentUser.pfpLetterBg = pfpState.letterColor;
+                localStorage.setItem(USER_DATA_KEY, JSON.stringify(currentUser));
+                saveLetterPfpBtn.innerText = "Saved!"; setTimeout(() => saveLetterPfpBtn.innerText = "Set Letter Avatar", 2000);
+            } catch(e) { console.error(e); saveLetterPfpBtn.innerText = "Error"; }
+        });
+
+        // --- CROPPER LOGIC ---
+        const pfpUploadInput = document.getElementById('pfp-upload-input');
+        const saveUploadPfpBtn = document.getElementById('save-upload-pfp-btn');
+        const cropperModal = document.getElementById('cropperModal');
+        const cropperCanvas = document.getElementById('cropperCanvas');
+        const cancelCropBtn = document.getElementById('cancelCropBtn');
+        const submitCropBtn = document.getElementById('submitCropBtn');
+        const ctx = cropperCanvas.getContext('2d');
+        let cropperImage = null; let cropState = { x: 0, y: 0, radius: 100 }; let isDragging = false; let dragStart = { x: 0, y: 0 };
+
+        pfpUploadInput.addEventListener('change', (e) => {
+            const file = e.target.files[0]; if (!file) return;
+            if (file.size > 2 * 1024 * 1024) { alert('File is too large (max 2MB).'); return; }
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                cropperImage = new Image();
+                cropperImage.onload = () => {
+                    const fixedHeight = 400; const scale = fixedHeight / cropperImage.height;
+                    cropperCanvas.height = fixedHeight; cropperCanvas.width = cropperImage.width * scale;
+                    cropState = { x: cropperCanvas.width / 2, y: cropperCanvas.height / 2, radius: Math.min(cropperCanvas.width, cropperCanvas.height) / 3 };
+                    cropperModal.style.display = 'flex'; requestAnimationFrame(drawCropper);
+                };
+                cropperImage.src = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        const drawCropper = () => {
+            if (!cropperImage) return;
+            const w = cropperCanvas.width; const h = cropperCanvas.height; ctx.clearRect(0, 0, w, h);
+            ctx.drawImage(cropperImage, 0, 0, w, h);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'; ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.arc(cropState.x, cropState.y, cropState.radius, 0, 2 * Math.PI, true); ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.arc(cropState.x, cropState.y, cropState.radius, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]);
+        };
+
+        const handleStart = (x, y) => { const dx = x - cropState.x; const dy = y - cropState.y; if (dx*dx + dy*dy < cropState.radius * cropState.radius) { isDragging = true; dragStart = { x, y }; } };
+        const handleMove = (x, y) => { if (isDragging) { const dx = x - dragStart.x; const dy = y - dragStart.y; let newX = cropState.x + dx; let newY = cropState.y + dy; const r = cropState.radius; const w = cropperCanvas.width; const h = cropperCanvas.height; newX = Math.max(r, Math.min(newX, w - r)); newY = Math.max(r, Math.min(newY, h - r)); cropState.x = newX; cropState.y = newY; dragStart = { x, y }; requestAnimationFrame(drawCropper); } };
+        const handleEnd = () => { isDragging = false; };
+        const handleScroll = (e) => { e.preventDefault(); const delta = e.deltaY > 0 ? -5 : 5; let newRadius = cropState.radius + delta; const w = cropperCanvas.width; const h = cropperCanvas.height; const maxPossibleRadius = Math.min(w, h) / 2; newRadius = Math.max(20, Math.min(newRadius, maxPossibleRadius)); cropState.radius = newRadius; requestAnimationFrame(drawCropper); };
+
+        cropperCanvas.addEventListener('mousedown', e => handleStart(e.offsetX, e.offsetY)); cropperCanvas.addEventListener('mousemove', e => handleMove(e.offsetX, e.offsetY)); cropperCanvas.addEventListener('mouseup', handleEnd); cropperCanvas.addEventListener('mouseleave', handleEnd); cropperCanvas.addEventListener('wheel', handleScroll);
+        cancelCropBtn.addEventListener('click', () => { cropperModal.style.display = 'none'; pfpUploadInput.value = ''; });
+
+        submitCropBtn.addEventListener('click', async () => {
+            const tempCanvas = document.createElement('canvas'); const size = 128; tempCanvas.width = size; tempCanvas.height = size; const tCtx = tempCanvas.getContext('2d');
+            const scale = cropperCanvas.height / cropperImage.height; const sourceX = (cropState.x - cropState.radius) / scale; const sourceY = (cropState.y - cropState.radius) / scale; const sourceSize = (cropState.radius * 2) / scale;
+            tCtx.drawImage(cropperImage, sourceX, sourceY, sourceSize, sourceSize, 0, 0, size, size);
+            const base64 = tempCanvas.toDataURL('image/jpeg', 0.8);
+            try {
+                submitCropBtn.disabled = true; submitCropBtn.textContent = "Saving...";
+                await updateDoc(doc(db, "users", currentUser.uid), { customPfp: base64, pfpType: 'custom' });
+                currentUser.customPfp = base64; currentUser.pfpType = 'custom'; localStorage.setItem(USER_DATA_KEY, JSON.stringify(currentUser));
+                pfpPreview.innerText = ""; pfpPreview.style.backgroundImage = `url('${base64}')`; pfpPreview.style.backgroundColor = "transparent"; pfpPreview.style.backgroundSize = "cover";
+                cropperModal.style.display = 'none'; saveUploadPfpBtn.innerText = "Saved!";
+            } catch (e) { console.error(e); alert('Failed to save image.'); } finally { submitCropBtn.disabled = false; submitCropBtn.innerHTML = '<i class="fa-solid fa-check mr-2"></i> Submit'; }
+        });
+        saveUploadPfpBtn.addEventListener('click', () => { pfpUploadInput.click(); });
+
+        // Theme Logic
+        const themeGrid = document.getElementById('theme-picker-container');
+        async function loadThemes() {
+            try {
+                const res = await fetch('https://cdn.jsdelivr.net/npm/4sp-dv@latest/themes.json'); if (!res.ok) return; let themes = await res.json();
+                const orderedThemeNames = ['Dark', 'Light', 'Christmas']; const sortedThemes = [];
+                orderedThemeNames.forEach(name => { const theme = themes.find(t => t.name === name); if (theme) { sortedThemes.push(theme); themes = themes.filter(t => t.name !== name); } });
+                const colorMap = { 'Crimson': 1, 'Fire': 1, 'Orange': 2, 'Sunset': 2, 'Rust': 2, 'Ember': 2, 'Copper': 2, 'Gold': 3, 'Green': 4, 'Forest': 4, 'Matrix': 4, 'Mint': 5, 'Ocean': 6, 'Deep Blue': 6, 'Purple': 7, 'Royal': 7, 'Haze': 7, 'Lavender': 7, 'Pink': 8, 'Coral': 8, 'Rose Gold': 8, 'Clanker': 9, 'Monochrome': 9, 'Silver': 9, 'Slate': 9 };
+                const getThemeType = (t) => (t['logo-src'] && t['logo-src'].includes('logo-dark.png')) ? 1 : 0;
+                themes.sort((a, b) => { const colorA = colorMap[a.name] || 100; const colorB = colorMap[b.name] || 100; if (colorA !== colorB) return colorA - colorB; const typeA = getThemeType(a); const typeB = getThemeType(b); if (typeA !== typeB) return typeA - typeB; return a.name.localeCompare(b.name); });
+                themes = [...sortedThemes, ...themes];
+                const savedThemeRaw = localStorage.getItem('user-navbar-theme'); let savedTheme = null; try { if(savedThemeRaw) savedTheme = JSON.parse(savedThemeRaw); } catch(e){}
+                themeGrid.innerHTML = '';
+                themes.forEach(theme => {
+                    const isActive = savedTheme && savedTheme.name === theme.name;
+                    const btn = document.createElement('button'); btn.className = `theme-button ${isActive ? 'active' : ''}`; btn.style.backgroundColor = theme['navbar-bg'] || '#000000'; btn.style.borderColor = theme['tab-active-border'] || '#4f46e5';
+                    btn.innerHTML = `<div class="theme-button-name" style="color: ${theme['navbar-text'] || '#c0c0c0'};">${theme.name}</div>`;
+                    btn.onclick = () => { applyTheme(theme); document.querySelectorAll('.theme-button').forEach(b => b.classList.remove('active')); btn.classList.add('active'); };
+                    themeGrid.appendChild(btn);
+                });
+            } catch(e) { console.error("Themes error", e); }
+        }
+        
+        const lightThemeNames = ['Light', 'Lavender', 'Rose Gold', 'Mint', 'Pink'];
+        function applyTheme(theme) {
+            const root = document.documentElement;
+            let logoSrc; if (lightThemeNames.includes(theme.name)) logoSrc = 'https://cdn.jsdelivr.net/npm/4sp-dv@latest/images/logo-dark.png'; else if (theme.name === 'Christmas') logoSrc = 'https://cdn.jsdelivr.net/npm/4sp-dv@latest/images/logo-christmas.png'; else logoSrc = 'https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/logo.png';
+            for (const [key, value] of Object.entries(theme)) { if (key !== 'logo-src' && key !== 'name') root.style.setProperty(`--${key}`, value); }
+            const logoImg = document.getElementById('navbar-logo');
+            if (logoImg) {
+                if (!logoImg.src.includes(logoSrc)) logoImg.src = logoSrc;
+                const noFilterThemes = ['Dark', 'Light', 'Christmas'];
+                if (noFilterThemes.includes(theme.name)) { logoImg.style.filter = ''; logoImg.style.transform = ''; } 
+                else { const tintColor = theme['tab-active-text'] || '#ffffff'; logoImg.style.filter = `drop-shadow(100px 0 0 ${tintColor})`; logoImg.style.transform = 'translateX(-100px)'; }
+            }
+            localStorage.setItem('user-navbar-theme', JSON.stringify(theme));
+            if (currentUser) updateDoc(doc(db, "users", currentUser.uid), { navbarTheme: theme }).catch(console.error);
+        }
+
+        // --- 3. Privacy: Panic Key ---
+        const panicKeyInput = document.getElementById('panic-key-input');
+        const currentPanicKeyDisplay = document.getElementById('current-panic-key');
+        const savePanicKeyBtn = document.getElementById('save-panic-key-btn');
+        const clearPanicKeyBtn = document.getElementById('clear-panic-key-btn');
+        const PANIC_KEY_STORAGE = 'local_panic_key';
+        let currentPanicKey = localStorage.getItem(PANIC_KEY_STORAGE);
+        if (currentPanicKey) currentPanicKeyDisplay.innerText = currentPanicKey;
+        
+        savePanicKeyBtn.addEventListener('click', () => { const key = panicKeyInput.value.trim().toUpperCase(); if (key && key.length === 1) { localStorage.setItem(PANIC_KEY_STORAGE, key); currentPanicKey = key; currentPanicKeyDisplay.innerText = key; panicKeyInput.value = ''; } });
+        clearPanicKeyBtn.addEventListener('click', () => { localStorage.removeItem(PANIC_KEY_STORAGE); currentPanicKey = null; currentPanicKeyDisplay.innerText = "NONE"; });
+        window.addEventListener('keydown', (e) => { if (currentPanicKey && e.key.toUpperCase() === currentPanicKey && !e.ctrlKey && !e.altKey && !e.metaKey && e.target.tagName !== 'INPUT') window.location.href = "https://google.com"; });
+
+        function loadSettingsData() { if (currentUser) { settingsUsernameInput.value = currentUser.username || ""; pfpState.letterColor = currentUser.pfpLetterBg || '#3B82F6'; updatePfpPreview(); } loadThemes(); }
+        checkAutoLogin();
+    </script>
+</body>
+</html>
