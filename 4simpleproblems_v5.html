@@ -48,13 +48,11 @@
     }
 
     /* --- FIXED OVERLAY LOGIC --- */
-    /* Removed the hardcoded rgba(0,0,0,0.6) and replaced with theme variables */
     body.nav-overlay-mode #navbar-container {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
-        /* Inherit the theme background but allow for a fallback */
         background: var(--navbar-bg, rgba(0, 0, 0, 0.6)); 
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
@@ -65,22 +63,79 @@
         height: 100vh; 
         margin-top: 0; 
     }
-    /* ------------------------- */
 
     .navbar-logo { height: 40px; width: auto; transition: filter 0.3s ease; }
-    .tab-wrapper { flex-grow: 1; display: flex; align-items: center; position: relative; min-width: 0; margin: 0 1rem; justify-content: center; overflow: hidden; }
+    
+    /* --- GLIDE / SCROLL STYLES ADDED FROM NAVIGATION.JS --- */
+    .tab-wrapper { 
+        flex-grow: 1; 
+        display: flex; 
+        align-items: center; 
+        position: relative; 
+        min-width: 0; 
+        margin: 0 1rem; 
+        justify-content: center; 
+        overflow: hidden; /* Important for masking */
+    }
+
     .tab-scroll-container { 
-        display: flex; align-items: center; gap: 0.5rem; overflow-x: auto; 
-        scrollbar-width: none; white-space: nowrap; max-width: 100%;
+        display: flex; 
+        align-items: center; 
+        gap: 0.5rem; 
+        overflow-x: auto; 
+        scrollbar-width: none; 
+        white-space: nowrap; 
+        max-width: 100%;
+        scroll-behavior: smooth; /* Smooth scrolling for arrows */
+        padding-left: 20px;      /* Prevent cut-off by fade */
+        padding-right: 20px;
     }
     .tab-scroll-container::-webkit-scrollbar { display: none; }
+
+    /* Glide Buttons */
+    .scroll-glide-button {
+        position: absolute; 
+        top: 0; 
+        height: 100%; 
+        width: 60px; /* Width of the fade area */
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        color: #ffffff; 
+        font-size: 1rem; 
+        cursor: pointer; 
+        opacity: 1; 
+        transition: opacity 0.3s, color 0.3s ease; 
+        z-index: 10; 
+        pointer-events: auto;
+        background: transparent;
+        border: none;
+    }
+
+    /* Fading Gradients */
+    #glide-left { 
+        left: 0; 
+        background: linear-gradient(to right, var(--navbar-bg, #000000) 30%, transparent); 
+        justify-content: flex-start; 
+        padding-left: 8px; 
+    }
+    #glide-right { 
+        right: 0; 
+        background: linear-gradient(to left, var(--navbar-bg, #000000) 30%, transparent); 
+        justify-content: flex-end; 
+        padding-right: 8px; 
+    }
     
+    .scroll-glide-button.hidden { opacity: 0 !important; pointer-events: none !important; }
+    /* ----------------------------------------------------- */
+
     .nav-tab { 
         padding: 0.5rem 1rem; 
         color: var(--tab-text, #9ca3af); 
         font-size: 0.875rem; font-weight: 400; 
         border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;
         border: 1px solid transparent; transition: all 0.2s; cursor: pointer;
+        flex-shrink: 0; /* Prevent tabs from squishing */
     }
     .nav-tab:hover { 
         color: var(--tab-hover-text, #ffffff); 
@@ -348,8 +403,10 @@
         <img src="https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/logo.png" id="navbar-logo" class="navbar-logo" alt="Logo">
         
         <div class="tab-wrapper">
-            <div class="tab-scroll-container" id="tabs-container">
+             <button id="glide-left" class="scroll-glide-button hidden"><i class="fa-solid fa-chevron-left"></i></button>
+             <div class="tab-scroll-container" id="tabs-container">
                 </div>
+             <button id="glide-right" class="scroll-glide-button hidden"><i class="fa-solid fa-chevron-right"></i></button>
         </div>
 
         <div class="auth-controls-wrapper">
@@ -1719,7 +1776,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, setDoc, onSnapshot, collection, query, where, getDocs, serverTimestamp, arrayUnion, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAZBKAckVa4IMvJGjcyndZx6Y1XD52lgro",
@@ -1733,6 +1791,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app); // Added for admin keybinds
 
         const lockScreen = document.getElementById('lock-screen');
         const navbar = document.getElementById('navbar-container');
@@ -1744,6 +1803,8 @@
         
         // Navbar elements
         const tabsContainer = document.getElementById('tabs-container');
+        const glideLeft = document.getElementById('glide-left');
+        const glideRight = document.getElementById('glide-right');
         
         // Pin Elements
         const pinWrapper = document.getElementById('pin-wrapper');
@@ -1767,6 +1828,7 @@
         const PIN_HIDDEN_KEY = 'local_pin_hidden';
         const USER_DATA_KEY = 'local_user_data';
         const LAST_PAGE_KEY = 'local_last_page';
+        const OWNER_EMAIL = "4simpleproblems@gmail.com"; // For admin checks
 
         const PAGE_DATA = {
             "dashboard": { "name": "Dashboard", "icon": "fa-solid fa-house-user", "url": "dashboard.html" },
@@ -1783,12 +1845,206 @@
 
         let currentUser = null;
 
+        // --- ADMIN KEYBINDS LOGIC (Integrated) ---
+        function initAdminKeybinds(db, auth, user) {
+            console.log("[Admin Keybinds] Initializing for", user.uid);
+            let explicitEnabled = true;
+            let lastEnablePressTime = 0;
+            let configUnsubscribe = null;
+
+            // Visual Feedback Helper
+            function showAdminToast(message, type = "neutral") {
+                const existing = document.getElementById("admin-keybind-toast");
+                if (existing) existing.remove();
+
+                const toast = document.createElement("div");
+                toast.id = "admin-keybind-toast";
+
+                // Styles
+                Object.assign(toast.style, {
+                    position: "fixed",
+                    bottom: "24px",
+                    right: "24px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    backgroundColor: "rgba(13, 13, 13, 0.95)",
+                    backdropFilter: "blur(5px)",
+                    color: "#c0c0c0",
+                    padding: "14px 20px",
+                    borderRadius: "12px",
+                    border: "1px solid #333",
+                    fontFamily: "'Geist', 'Roboto', sans-serif",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.5)",
+                    zIndex: "9999999",
+                    opacity: "0",
+                    transform: "translateY(20px)",
+                    transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)"
+                });
+
+                let iconHtml = '';
+                if (type === "success" || type === "green") {
+                    toast.style.borderColor = "rgba(34, 197, 94, 0.5)";
+                    iconHtml = '<i class="fa-solid fa-check-circle" style="color: #4ade80;"></i>';
+                } else if (type === "error" || type === "red") {
+                    toast.style.borderColor = "rgba(239, 68, 68, 0.5)";
+                    iconHtml = '<i class="fa-solid fa-circle-exclamation" style="color: #f87171;"></i>';
+                } else {
+                    toast.style.borderColor = "rgba(59, 130, 246, 0.5)";
+                    iconHtml = '<i class="fa-solid fa-info-circle" style="color: #60a5fa;"></i>';
+                }
+
+                toast.innerHTML = `${iconHtml}<span>${message}</span>`;
+                document.body.appendChild(toast);
+
+                requestAnimationFrame(() => {
+                    toast.style.opacity = "1";
+                    toast.style.transform = "translateY(0)";
+                });
+
+                setTimeout(() => {
+                    toast.style.opacity = "0";
+                    toast.style.transform = "translateY(10px)";
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+
+            function subscribeToConfig() {
+                if (configUnsubscribe) return;
+                const configRef = doc(db, 'config', 'soundboard');
+                configUnsubscribe = onSnapshot(configRef, async (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        if (data.explicitEnabled !== undefined) {
+                            explicitEnabled = data.explicitEnabled;
+                        }
+                    } else {
+                        explicitEnabled = true;
+                    }
+                }, (error) => console.error("Config Listen Error:", error));
+            }
+
+            // Init Listener
+            subscribeToConfig();
+
+            // Key Listener
+            document.addEventListener('keydown', async (e) => {
+                if (e.ctrlKey && e.altKey && (e.key.toLowerCase() === 'e' || e.code === 'KeyE')) {
+                    e.preventDefault();
+                    console.log("[Admin Keybinds] Ctrl+Alt+E detected.");
+
+                    if (explicitEnabled) {
+                        try {
+                            await setDoc(doc(db, 'config', 'soundboard'), { explicitEnabled: false }, { merge: true });
+                            showAdminToast("Explicit Sounds: DISABLED", "red");
+                            lastEnablePressTime = 0;
+                        } catch (err) {
+                            console.error("[Admin Keybinds] Failed to disable:", err);
+                            showAdminToast("Error: Check Console", "red");
+                        }
+                    } else {
+                        const now = Date.now();
+                        if (now - lastEnablePressTime < 1500) { 
+                            try {
+                                await setDoc(doc(db, 'config', 'soundboard'), { explicitEnabled: true }, { merge: true });
+                                showAdminToast("Explicit Sounds: ENABLED", "green");
+                                lastEnablePressTime = 0;
+                            } catch (err) {
+                                console.error("[Admin Keybinds] Failed to enable:", err);
+                                showAdminToast("Error: Check Console", "red");
+                            }
+                        } else {
+                            showAdminToast("Press Ctrl+Alt+E again to ENABLE", "blue");
+                            lastEnablePressTime = now;
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- ANALYTICS LOGIC (Integrated) ---
+        function initAnalytics(db, userUid) {
+            console.log("Analytics: Initializing...");
+
+            function getSessionId() {
+                let sid = sessionStorage.getItem('analytics_session_id');
+                if (!sid) {
+                    sid = 'sess_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+                    sessionStorage.setItem('analytics_session_id', sid);
+                }
+                return sid;
+            }
+
+            const sessionId = getSessionId();
+            let isExcluded = sessionStorage.getItem('analytics_is_admin') === 'true';
+
+            // We handle exclusion logic in the main Auth flow, so here we just assume the status passed is correct
+            // But we can double check session storage
+            
+            if (!sessionStorage.getItem('analytics_start_time')) {
+                sessionStorage.setItem('analytics_start_time', Date.now());
+            }
+
+            window.trackPageView = function() {
+                if (isExcluded) return;
+                const path = window.location.pathname.replace('/logged-in/', '') || window.lastLoadedPage || 'dashboard.html';
+                const pageName = document.title || path;
+                
+                // For iframe, get path from loaded page
+                const finalPath = window.lastLoadedPage || path;
+
+                const docRef = doc(db, 'analytics', sessionId);
+                
+                // Using Firestore functions imported at top
+                setDoc(docRef, {
+                    sessionId: sessionId,
+                    userAgent: navigator.userAgent,
+                    lastActive: serverTimestamp(),
+                    visitedPages: arrayUnion({
+                        path: finalPath,
+                        title: pageName,
+                        timestamp: Date.now()
+                    }),
+                    pageCount: increment(1)
+                }, { merge: true }).catch(err => console.error("Analytics Error:", err));
+            };
+
+            function updateSession() {
+                if (isExcluded) return;
+                const docRef = doc(db, 'analytics', sessionId);
+                let startTime = parseInt(sessionStorage.getItem('analytics_start_time') || Date.now());
+                const now = Date.now();
+                const duration = (now - startTime) / 1000; 
+
+                setDoc(docRef, {
+                    userId: userUid || 'anonymous',
+                    lastActive: serverTimestamp(),
+                    duration: duration,
+                    startTime: startTime
+                }, { merge: true });
+            }
+
+            // Start
+            window.trackPageView();
+            setInterval(updateSession, 10000); 
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') updateSession();
+            });
+            window.addEventListener('beforeunload', () => updateSession());
+        }
+
         // --- Navbar Logic ---
         function renderNavbar(activePageUrl) {
             const tabsContainerEl = document.getElementById('tabs-container');
             const pinBtnEl = document.getElementById('pin-btn');
             const pinWrapperEl = document.getElementById('pin-wrapper');
             const showPinMenuItemEl = document.getElementById('show-pin-menu-item');
+            
+            // Glide Elements
+            const glideLeft = document.getElementById('glide-left');
+            const glideRight = document.getElementById('glide-right');
 
             if (!tabsContainerEl) return;
             tabsContainerEl.innerHTML = '';
@@ -1803,6 +2059,52 @@
                 tab.onclick = () => loadPage(page.url);
                 tabsContainerEl.appendChild(tab);
             });
+
+            // --- Scroll Glide Logic ---
+            const updateScrollGilders = () => {
+                const container = tabsContainerEl;
+                const leftButton = glideLeft;
+                const rightButton = glideRight;
+                
+                // Only show gliders if scrolling is possible/needed
+                if (container.scrollWidth <= container.offsetWidth + 2) {
+                    if (leftButton) leftButton.classList.add('hidden');
+                    if (rightButton) rightButton.classList.add('hidden');
+                    // Center content if few tabs
+                    container.style.justifyContent = 'center';
+                    return; 
+                } else {
+                    container.style.justifyContent = 'flex-start';
+                }
+
+                if (!container || !leftButton || !rightButton) return;
+
+                const isScrolledToLeft = container.scrollLeft <= 5;
+                const maxScrollLeft = container.scrollWidth - container.offsetWidth;
+                const isScrolledToRight = (container.scrollLeft + 5) >= maxScrollLeft;
+
+                if (isScrolledToLeft) leftButton.classList.add('hidden');
+                else leftButton.classList.remove('hidden');
+
+                if (isScrolledToRight) rightButton.classList.add('hidden');
+                else rightButton.classList.remove('hidden');
+            };
+
+            // Setup Listeners for Glide
+            tabsContainerEl.removeEventListener('scroll', updateScrollGilders); // Clean up old
+            tabsContainerEl.addEventListener('scroll', updateScrollGilders);
+            window.removeEventListener('resize', updateScrollGilders);
+            window.addEventListener('resize', updateScrollGilders);
+
+            if(glideLeft) {
+                glideLeft.onclick = () => { tabsContainerEl.scrollLeft = 0; };
+            }
+            if(glideRight) {
+                glideRight.onclick = () => { tabsContainerEl.scrollLeft = tabsContainerEl.scrollWidth; };
+            }
+            
+            // Initial check
+            setTimeout(updateScrollGilders, 50);
 
             // Update Pin Button State
             const pinned = localStorage.getItem(PINNED_PAGE_KEY);
@@ -1913,7 +2215,12 @@
 
         async function fetchUserData(ownerUid) {
             try {
-                const userDoc = await getDoc(doc(db, "users", ownerUid));
+                // Parallel check for User Data and Admin Status
+                const [userDoc, adminDoc] = await Promise.all([
+                    getDoc(doc(db, "users", ownerUid)),
+                    getDoc(doc(db, "admins", ownerUid))
+                ]);
+
                 if (userDoc.exists()) {
                     const data = userDoc.data();
                     const userData = {
@@ -1925,8 +2232,27 @@
                     updateUIWithUser(userData);
                     currentUser = userData; // Set global
                 }
+
+                // Check Admin Status
+                let isAdmin = false;
+                if (userData && userData.email === OWNER_EMAIL) isAdmin = true;
+                if (adminDoc.exists()) isAdmin = true;
+
+                if (isAdmin) {
+                    console.log("User is Admin/Superadmin");
+                    sessionStorage.setItem('analytics_is_admin', 'true');
+                    initAdminKeybinds(db, auth, { uid: ownerUid, email: currentUser?.email });
+                } else {
+                    sessionStorage.removeItem('analytics_is_admin');
+                }
+
+                // Initialize Analytics (After admin check to set exclusion flag)
+                initAnalytics(db, ownerUid);
+
             } catch (e) {
                 console.error("Error fetching user data:", e);
+                // Even on error, try init analytics as anon/fallback
+                initAnalytics(db, ownerUid);
             }
         }
 
@@ -1978,7 +2304,10 @@
                         if (userData && userData.uid === codeData.ownerUid) {
                              updateUIWithUser(userData);
                              currentUser = userData;
-                        } else if (codeData.ownerUid) {
+                        } 
+                        
+                        // Always fetch fresh to re-verify admin status
+                        if (codeData.ownerUid) {
                             await fetchUserData(codeData.ownerUid);
                         }
 
@@ -2093,6 +2422,12 @@
 
         // --- Page Loader ---
         window.loadPage = function(pageName) {
+            
+            // Trigger Analytics Track on Page Load
+            if (window.trackPageView) {
+                window.trackPageView();
+            }
+
             // Intercept Settings
             if (pageName === 'settings.html' || pageName === 'settings') {
                 window.lastLoadedPage = 'settings.html';
