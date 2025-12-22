@@ -3,77 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4SP - LOCAL CLIENT</title>
+    <title>4SP - VERSION 5 CLIENT</title>
+    <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/npm/4sp-dv@latest/images/logo.png">
+
     <base href="https://cdn.jsdelivr.net/npm/4sp-dv@1.0.14/logged-in/">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
-        body { 
-            background-color: #040404; 
-            color: #c0c0c0; 
-            font-family: 'Geist', sans-serif; 
-            height: 100vh; 
-            margin: 0; 
-            display: flex; 
-            flex-direction: column; 
-            font-weight: 300;
-        }
-        
-        h1, h2, h3, .font-bold, .font-semibold, strong, b, .tracking-widest {
-            font-weight: 400 !important;
-        }
+    body { 
+        background-color: #040404; 
+        color: #c0c0c0; 
+        font-family: 'Geist', sans-serif; 
+        height: 100vh; 
+        margin: 0; 
+        display: flex; 
+        flex-direction: column; 
+        font-weight: 300;
+    }
+    
+    h1, h2, h3, .font-bold, .font-semibold, strong, b, .tracking-widest {
+        font-weight: 400 !important;
+    }
 
-        #app-frame { width: 100%; height: 100%; border: none; display: none; flex-grow: 1; }
-        .hidden { display: none !important; }
+    #app-frame { width: 100%; height: 100%; border: none; display: none; flex-grow: 1; }
+    .hidden { display: none !important; }
 
-        /* --- Navbar Styles --- */
-        #navbar-container {
-            background: var(--navbar-bg, #000000);
-            border-bottom: 1px solid var(--navbar-border, #1f2937);
-            height: 64px;
-            width: 100%;
-            display: none; /* Hidden until unlocked */
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 1rem;
-            box-sizing: border-box;
-            flex-shrink: 0;
-            z-index: 60; /* Ensure navbar is above settings */
-            position: relative;
-            transition: background-color 0.3s ease, border-color 0.3s ease;
-        }
-        .navbar-logo { height: 40px; width: auto; transition: filter 0.3s ease; }
-        .tab-wrapper { flex-grow: 1; display: flex; align-items: center; position: relative; min-width: 0; margin: 0 1rem; justify-content: center; overflow: hidden; }
-        .tab-scroll-container { 
-            display: flex; align-items: center; gap: 0.5rem; overflow-x: auto; 
-            scrollbar-width: none; white-space: nowrap; max-width: 100%;
-        }
-        .tab-scroll-container::-webkit-scrollbar { display: none; }
-        
-        .nav-tab { 
-            padding: 0.5rem 1rem; 
-            color: var(--tab-text, #9ca3af); 
-            font-size: 0.875rem; font-weight: 400; 
-            border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;
-            border: 1px solid transparent; transition: all 0.2s; cursor: pointer;
-        }
-        .nav-tab:hover { 
-            color: var(--tab-hover-text, #ffffff); 
-            background-color: var(--tab-hover-bg, rgba(79, 70, 229, 0.05));
-            border-color: var(--tab-hover-border, transparent);
-        }
-        .nav-tab.active { 
-            color: var(--tab-active-text, #4f46e5); 
-            border-color: var(--tab-active-border, #4f46e5); 
-            background-color: var(--tab-active-bg, rgba(79, 70, 229, 0.1)); 
-        }
-        .nav-tab.active:hover {
-            color: var(--tab-active-hover-text, #6366f1);
-            border-color: var(--tab-active-hover-border, #6366f1);
-            background-color: var(--tab-active-hover-bg, rgba(79, 70, 229, 0.15));
-        }
+    /* --- Navbar Styles --- */
+    #navbar-container {
+        background: var(--navbar-bg, #000000);
+        border-bottom: 1px solid var(--navbar-border, #1f2937);
+        height: 64px;
+        width: 100%;
+        display: none; /* Hidden until unlocked */
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 1rem;
+        box-sizing: border-box;
+        flex-shrink: 0;
+        z-index: 60; 
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+        position: relative; 
+    }
+
+    /* --- FIXED OVERLAY LOGIC --- */
+    /* Removed the hardcoded rgba(0,0,0,0.6) and replaced with theme variables */
+    body.nav-overlay-mode #navbar-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        /* Inherit the theme background but allow for a fallback */
+        background: var(--navbar-bg, rgba(0, 0, 0, 0.6)); 
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--navbar-border, rgba(255, 255, 255, 0.08));
+    }
+
+    body.nav-overlay-mode #app-frame {
+        height: 100vh; 
+        margin-top: 0; 
+    }
+    /* ------------------------- */
+
+    .navbar-logo { height: 40px; width: auto; transition: filter 0.3s ease; }
+    .tab-wrapper { flex-grow: 1; display: flex; align-items: center; position: relative; min-width: 0; margin: 0 1rem; justify-content: center; overflow: hidden; }
+    .tab-scroll-container { 
+        display: flex; align-items: center; gap: 0.5rem; overflow-x: auto; 
+        scrollbar-width: none; white-space: nowrap; max-width: 100%;
+    }
+    .tab-scroll-container::-webkit-scrollbar { display: none; }
+    
+    .nav-tab { 
+        padding: 0.5rem 1rem; 
+        color: var(--tab-text, #9ca3af); 
+        font-size: 0.875rem; font-weight: 400; 
+        border-radius: 12px; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;
+        border: 1px solid transparent; transition: all 0.2s; cursor: pointer;
+    }
+    .nav-tab:hover { 
+        color: var(--tab-hover-text, #ffffff); 
+        background-color: var(--tab-hover-bg, rgba(79, 70, 229, 0.05));
+        border-color: var(--tab-hover-border, transparent);
+    }
+    .nav-tab.active { 
+        color: var(--tab-active-text, #4f46e5); 
+        border-color: var(--tab-active-border, #4f46e5); 
+        background-color: var(--tab-active-bg, rgba(79, 70, 229, 0.1)); 
+    }
+    .nav-tab.active:hover {
+        color: var(--tab-active-hover-text, #6366f1);
+        border-color: var(--tab-active-hover-border, #6366f1);
+        background-color: var(--tab-active-hover-bg, rgba(79, 70, 229, 0.15));
+    }
         
         .auth-controls-wrapper { display: flex; align-items: center; gap: 1rem; position: relative; }
         
@@ -295,13 +318,13 @@
     <div id="lock-screen" class="w-full h-full flex flex-col items-center justify-center p-4">
         <div class="max-w-5xl w-full bg-[#040404] flex flex-col md:flex-row border border-[#252525] rounded-3xl overflow-hidden shadow-2xl">
             <div class="flex-1 p-8 flex flex-col justify-center items-center border-b md:border-b-0 md:border-r border-[#252525]">
-                <h2 class="text-3xl text-[#c0c0c0] mb-6 text-center w-full font-light tracking-tighter">4SP v5 Client</h2>
+                <h2 class="text-3xl text-[#c0c0c0] mb-6 text-center w-full font-light tracking-tighter">4SP Version 5 Client (DV)</h2>
                 <p class="text-[#505050] text-center mb-8 text-sm">Enter your 12-character access code.</p>
                 
                 <input type="text" id="codeInput" class="w-full max-w-xs bg-[#111] border border-[#252525] text-white rounded-xl p-3 text-center tracking-[0.2em] mb-4 outline-none focus:border-indigo-500 transition" placeholder="XXXX-XXXX-XXXX">
                 
                 <button id="unlockBtn" class="w-full max-w-xs py-2 px-4 text-sm font-medium rounded-xl text-indigo-500 bg-indigo-500/10 border border-indigo-500 hover:bg-indigo-500/20 transition mb-4">
-                    Login
+                    Access
                 </button>
                 
                 <p id="lockMessage" class="text-red-400 text-xs mt-2 min-h-[20px] text-center"></p>
@@ -1753,7 +1776,7 @@
             "countdowns": { "name": "Countdowns", "icon": "fa-solid fa-clock", "url": "countdowns.html" },
             "weather": { "name": "Weather", "icon": "fa-solid fa-cloud-sun", "url": "weather.html" },
             "dictionary": { "name": "Dictionary", "icon": "fa-solid fa-book", "url": "dictionary.html" },
-            "messenger-v2": { "name": "Messenger", "icon": "fa-solid fa-comments", "url": "messenger-tutorial.html" },
+            "messenger-v2": { "name": "Messenger", "icon": "fa-solid fa-comments", "url": "messenger-v2.html" },
             "games": { "name": "GAMES", "icon": "fa-solid fa-gamepad", "url": "games.html" },
             "settings": { "name": "Settings", "icon": "fa-solid fa-gear", "url": "settings.html" }
         };
@@ -2075,6 +2098,10 @@
                 window.lastLoadedPage = 'settings.html';
                 localStorage.setItem(LAST_PAGE_KEY, 'settings.html');
                 renderNavbar(BASE_URL + 'settings.html');
+                
+                // Ensure overlay mode is OFF for settings (per request)
+                document.body.classList.remove('nav-overlay-mode');
+                
                 openSettings();
                 return;
             }
@@ -2087,6 +2114,15 @@
             if (pageName.startsWith('./')) pageName = pageName.substring(2);
             if (pageName.startsWith('../')) pageName = pageName.substring(3);
             if (pageName.startsWith(BASE_URL)) pageName = pageName.substring(BASE_URL.length);
+
+            // --- OVERLAY LOGIC SWITCH ---
+            // If page is 'games.html', 'settings.html', or 'messenger-v2.html', do NOT use overlay mode.
+            if (pageName.includes('games') || pageName.includes('settings') || pageName.includes('messenger')) {
+                document.body.classList.remove('nav-overlay-mode');
+            } else {
+                document.body.classList.add('nav-overlay-mode');
+            }
+            // ---------------------------
 
             window.lastLoadedPage = pageName;
             localStorage.setItem(LAST_PAGE_KEY, pageName);
