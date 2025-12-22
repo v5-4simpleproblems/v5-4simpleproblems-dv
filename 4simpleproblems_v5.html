@@ -162,15 +162,14 @@
         }
         .icon-btn:hover { background-color: #374151; color: white; }
 
-        .auth-menu, .pin-context-menu {
+        .auth-menu {
             position: absolute; right: 0; top: 50px; width: 14rem;
             background: var(--menu-bg, #000); 
             border: 1px solid var(--menu-border, #374151); 
             border-radius: 0.75rem;
             padding: 0.5rem; display: none; flex-direction: column; gap: 0.25rem; z-index: 50;
         }
-        .pin-context-menu { right: auto; left: 0; width: 12rem; }
-        .auth-menu.open, .pin-context-menu.open { display: flex; }
+        .auth-menu.open { display: flex; }
         
         .auth-menu-item {
             display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem;
@@ -259,6 +258,18 @@
             background-color: rgba(79, 70, 229, 0.15);
             border-color: #6366f1;
             color: #6366f1;
+        }
+
+        .btn-toolbar-style.btn-primary-override-danger {
+            justify-content: center;
+            background-color: rgba(220, 38, 38, 0.1);
+            border: 1px solid #dc2626;
+            color: #dc2626;
+        }
+        .btn-toolbar-style.btn-primary-override-danger:hover {
+            background-color: rgba(220, 38, 38, 0.15);
+            border-color: #ef4444;
+            color: #ef4444;
         }
 
         .settings-tab {
@@ -410,23 +421,6 @@
         </div>
 
         <div class="auth-controls-wrapper">
-            <div class="relative" id="pin-wrapper">
-                <button id="pin-btn" class="icon-btn" title="Pin this page">
-                    <i class="fa-solid fa-thumbtack"></i>
-                </button>
-                <div id="pin-menu" class="pin-context-menu">
-                    <div class="auth-menu-item" id="repin-btn">
-                        <i class="fa-solid fa-thumbtack w-4"></i> Repin
-                    </div>
-                    <div class="auth-menu-item text-red-400 hover:text-red-300" id="remove-pin-btn">
-                        <i class="fa-solid fa-xmark w-4"></i> Remove Pin
-                    </div>
-                    <div class="auth-menu-item text-red-400 hover:text-red-300" id="hide-pin-btn">
-                        <i class="fa-solid fa-eye-slash w-4"></i> Hide Button
-                    </div>
-                </div>
-            </div>
-
             <div class="relative">
                 <button id="auth-btn" class="icon-btn">
                     <i class="fa-solid fa-user"></i>
@@ -439,9 +433,6 @@
                     <a href="#" class="auth-menu-item" onclick="loadPage('settings.html'); return false;">
                         <i class="fa-solid fa-gear w-4"></i> Settings
                     </a>
-                    <div class="auth-menu-item hidden" id="show-pin-menu-item">
-                        <i class="fa-solid fa-eye w-4"></i> Show Pin Button
-                    </div>
                     <div class="auth-menu-item text-red-400 hover:text-red-300" id="logout-btn">
                         <i class="fa-solid fa-right-from-bracket w-4"></i> Disconnect
                     </div>
@@ -474,6 +465,7 @@
             <div id="settings-main-view">
                 <div id="tab-general" class="settings-section">
                     <h3 class="text-3xl font-bold text-white mb-6">General Settings</h3>
+                    
                     <div class="settings-box">
                         <h3 class="text-xl font-bold text-white mb-2">Account Username</h3>
                         <label class="block text-gray-400 text-sm mb-2 font-light">New Username</label>
@@ -483,6 +475,28 @@
                         </div>
                         <p id="username-msg" class="general-message-area text-sm mt-2"></p>
                     </div>
+
+                    <h3 class="text-xl font-bold text-white mb-2 mt-6">Organization</h3>
+                    <div class="settings-box bg-cyan-500/10 border-cyan-500/50 p-4">
+                        <p class="text-sm font-light text-cyan-300 mb-3">
+                            Visit the official 4SP Organization website for updates and more tools.
+                        </p>
+                        <a href="https://4sp-organization.github.io/" target="_blank" class="btn-toolbar-style w-full justify-center bg-cyan-500/10 border-cyan-500 text-cyan-500 hover:bg-cyan-500/20 hover:text-cyan-400">
+                            <i class="fa-solid fa-globe mr-2"></i> Visit Website
+                        </a>
+                    </div>
+            
+                    <h3 class="text-xl font-bold text-white mb-2 mt-6">Disconnect Client</h3>
+                    <div class="settings-box bg-red-900/10 border-red-700/50 p-4">
+                        <p class="text-sm font-light text-red-300 mb-3">
+                            <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                            Disconnect this client from your account. You will need to generate a new code to reconnect.
+                        </p>
+                        <button id="disconnect-account-btn" class="btn-toolbar-style btn-primary-override-danger w-full justify-center">
+                            <i class="fa-solid fa-power-off mr-2"></i> Disconnect Account
+                        </button>
+                    </div>
+
                 </div>
 
                 <div id="tab-personalization" class="settings-section hidden">
@@ -569,18 +583,19 @@
                     <h3 class="text-3xl font-bold text-white mb-6">About 4SP</h3>
                     <div class="settings-box p-6 flex flex-col items-center text-center">
                         <img src="https://cdn.jsdelivr.net/npm/4sp-asset-library@latest/logo.png" class="h-24 mb-4" alt="Logo">
-                        <h1 class="text-3xl font-bold text-white mb-2">4SimpleProblems</h1>
-                        <p class="text-gray-400 mb-6 max-w-lg font-light">A comprehensive student toolkit and entertainment platform.</p>
+                        <h1 class="text-3xl font-bold text-white mb-2">(4SP) 4simpleproblems</h1>
+                        <p class="text-gray-400 mb-6 max-w-lg font-light">From a soundboard, to a full downloadable client of a platform.</p>
                         
-                        <div class="inline-block bg-[#0a0a0a] border border-[#333] px-4 py-2 rounded-full mb-8">
-                            <span class="text-gray-500 text-sm">Version</span>
-                            <span class="text-indigo-400 font-mono font-bold ml-2">5.0.0 DV</span>
-                        </div>
+                        <div class="inline-block bg-[#0a0a0a] border border-[#333] px-4 py-2 rounded-[14px] mb-8">
+  <span class="text-gray-500 text-sm">Version:</span>
+  <span class="text-indigo-400 font-mono font-bold ml-2">5.0.0 (DV)</span>
+</div>
+
                         
                         <div class="flex gap-4">
-                            <a href="#" class="text-gray-400 hover:text-white transition"><i class="fa-brands fa-github fa-xl"></i></a>
-                            <a href="#" class="text-gray-400 hover:text-white transition"><i class="fa-brands fa-youtube fa-xl"></i></a>
-                            <a href="#" class="text-gray-400 hover:text-white transition"><i class="fa-brands fa-discord fa-xl"></i></a>
+                            <a href="https://github.com/4simpleproblems-v5" class="text-gray-400 hover:text-white transition"><i class="fa-brands fa-github fa-xl"></i></a>
+                            <a href="https://youtube.com/4simpleproblems" class="text-gray-400 hover:text-white transition"><i class="fa-brands fa-youtube fa-xl"></i></a>
+                            <a href="https://x.com/@4simpleproblems" class="text-gray-400 hover:text-white transition"><i class="fa-brands fa-discord fa-xl"></i></a>
                         </div>
                     </div>
                 </div>
@@ -1806,15 +1821,6 @@
         const glideLeft = document.getElementById('glide-left');
         const glideRight = document.getElementById('glide-right');
         
-        // Pin Elements
-        const pinWrapper = document.getElementById('pin-wrapper');
-        const pinBtn = document.getElementById('pin-btn');
-        const pinMenu = document.getElementById('pin-menu');
-        const repinBtn = document.getElementById('repin-btn');
-        const removePinBtn = document.getElementById('remove-pin-btn');
-        const hidePinBtn = document.getElementById('hide-pin-btn');
-        const showPinMenuItem = document.getElementById('show-pin-menu-item');
-
         // Auth Elements
         const authBtn = document.getElementById('auth-btn');
         const authMenu = document.getElementById('auth-menu');
@@ -1824,8 +1830,6 @@
 
         const BASE_URL = 'https://cdn.jsdelivr.net/npm/4sp-dv@1.0.15/logged-in/';
         const STORAGE_KEY = 'local_access_code';
-        const PINNED_PAGE_KEY = 'local_pinned_page';
-        const PIN_HIDDEN_KEY = 'local_pin_hidden';
         const USER_DATA_KEY = 'local_user_data';
         const LAST_PAGE_KEY = 'local_last_page';
         const OWNER_EMAIL = "4simpleproblems@gmail.com"; // For admin checks
@@ -1844,6 +1848,7 @@
         };
 
         let currentUser = null;
+        let userDataUnsubscribe = null;
 
         // --- ADMIN KEYBINDS LOGIC (Integrated) ---
         function initAdminKeybinds(db, auth, user) {
@@ -2038,9 +2043,6 @@
         // --- Navbar Logic ---
         function renderNavbar(activePageUrl) {
             const tabsContainerEl = document.getElementById('tabs-container');
-            const pinBtnEl = document.getElementById('pin-btn');
-            const pinWrapperEl = document.getElementById('pin-wrapper');
-            const showPinMenuItemEl = document.getElementById('show-pin-menu-item');
             
             // Glide Elements
             const glideLeft = document.getElementById('glide-left');
@@ -2105,86 +2107,6 @@
             
             // Initial check
             setTimeout(updateScrollGilders, 50);
-
-            // Update Pin Button State
-            const pinned = localStorage.getItem(PINNED_PAGE_KEY);
-            if (pinBtnEl) {
-                if (pinned && pinned === currentPath) {
-                    pinBtnEl.style.color = '#4f46e5';
-                } else {
-                    pinBtnEl.style.color = '#d1d5db';
-                }
-            }
-
-            // Update Pin Visibility
-            const isHidden = localStorage.getItem(PIN_HIDDEN_KEY) === 'true';
-            if (isHidden) {
-                if (pinWrapperEl) pinWrapperEl.classList.add('hidden');
-                if (showPinMenuItemEl) {
-                    showPinMenuItemEl.classList.remove('hidden');
-                    showPinMenuItemEl.onclick = () => {
-                        localStorage.setItem(PIN_HIDDEN_KEY, 'false');
-                        renderNavbar(activePageUrl);
-                    };
-                }
-            } else {
-                if (pinWrapperEl) pinWrapperEl.classList.remove('hidden');
-                if (showPinMenuItemEl) showPinMenuItemEl.classList.add('hidden');
-            }
-        }
-
-        // --- Pin Logic ---
-        function getCurrentPage() {
-            const currentFrameSrc = appFrame.contentWindow.location.href;
-            let pageName = currentFrameSrc.replace(BASE_URL, '');
-            if (!pageName || pageName === 'about:blank') pageName = window.lastLoadedPage || 'dashboard.html';
-            return pageName;
-        }
-
-        // Pin Button
-        if (pinBtn) {
-            pinBtn.addEventListener('click', () => {
-                const pageName = getCurrentPage();
-                const currentPinned = localStorage.getItem(PINNED_PAGE_KEY);
-                
-                if (currentPinned === pageName) {
-                    localStorage.removeItem(PINNED_PAGE_KEY);
-                } else {
-                    localStorage.setItem(PINNED_PAGE_KEY, pageName);
-                }
-                renderNavbar(pageName);
-            });
-
-            // Context Menu
-            pinBtn.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                if (pinMenu) pinMenu.classList.toggle('open');
-                if (authMenu) authMenu.classList.remove('open');
-            });
-        }
-
-        if (repinBtn) {
-            repinBtn.addEventListener('click', () => {
-                localStorage.setItem(PINNED_PAGE_KEY, getCurrentPage());
-                renderNavbar(getCurrentPage());
-                if (pinMenu) pinMenu.classList.remove('open');
-            });
-        }
-
-        if (removePinBtn) {
-            removePinBtn.addEventListener('click', () => {
-                localStorage.removeItem(PINNED_PAGE_KEY);
-                renderNavbar(getCurrentPage());
-                if (pinMenu) pinMenu.classList.remove('open');
-            });
-        }
-
-        if (hidePinBtn) {
-            hidePinBtn.addEventListener('click', () => {
-                localStorage.setItem(PIN_HIDDEN_KEY, 'true');
-                renderNavbar(getCurrentPage());
-                if (pinMenu) pinMenu.classList.remove('open');
-            });
         }
 
         // Auth Menu
@@ -2192,7 +2114,6 @@
             authBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (authMenu) authMenu.classList.toggle('open');
-                if (pinMenu) pinMenu.classList.remove('open');
             });
         }
 
@@ -2200,42 +2121,56 @@
             if (authMenu && authBtn && !authMenu.contains(e.target) && !authBtn.contains(e.target)) {
                 authMenu.classList.remove('open');
             }
-            if (pinMenu && pinBtn && !pinMenu.contains(e.target) && !pinBtn.contains(e.target)) {
-                pinMenu.classList.remove('open');
-            }
         });
 
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
                 localStorage.removeItem(STORAGE_KEY);
                 localStorage.removeItem(USER_DATA_KEY);
+                if (userDataUnsubscribe) userDataUnsubscribe();
                 location.reload();
             });
         }
 
         async function fetchUserData(ownerUid) {
+            // Setup Real-time Listener for User Data (PFP Sync)
+            if (userDataUnsubscribe) userDataUnsubscribe();
+
             try {
-                // Parallel check for User Data and Admin Status
-                const [userDoc, adminDoc] = await Promise.all([
-                    getDoc(doc(db, "users", ownerUid)),
-                    getDoc(doc(db, "admins", ownerUid))
-                ]);
+                // Initial fetch to check admin status (less frequent change)
+                 const adminDoc = await getDoc(doc(db, "admins", ownerUid));
 
-                if (userDoc.exists()) {
-                    const data = userDoc.data();
-                    const userData = {
-                        uid: ownerUid,
-                        username: data.username || "User",
-                        email: data.email || "No email"
-                    };
-                    localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
-                    updateUIWithUser(userData);
-                    currentUser = userData; // Set global
-                }
+                 userDataUnsubscribe = onSnapshot(doc(db, "users", ownerUid), (docSnap) => {
+                     if (docSnap.exists()) {
+                         const data = docSnap.data();
+                         // Merge with existing local data to preserve properties not in basic user doc if any
+                         const newUserData = {
+                             ...currentUser,
+                             uid: ownerUid,
+                             username: data.username || "User",
+                             email: data.email || "No email",
+                             pfpType: data.pfpType,
+                             customPfp: data.customPfp,
+                             pfpLetterBg: data.pfpLetterBg,
+                             navbarTheme: data.navbarTheme // Sync theme if updated remotely
+                         };
+                         
+                         localStorage.setItem(USER_DATA_KEY, JSON.stringify(newUserData));
+                         updateUIWithUser(newUserData);
+                         currentUser = newUserData; // Update global state
+                         
+                         // If settings overlay is open, we might need to update preview there too
+                         if (!document.getElementById('settings-overlay').classList.contains('hidden')) {
+                             // Dispatch event or manually update if elements exist
+                             const preview = document.getElementById('pfp-preview');
+                             if (preview) updateSettingsPfpPreview(newUserData, preview);
+                         }
+                     }
+                 });
 
-                // Check Admin Status
+                // Check Admin Status (kept separate as it's static usually)
                 let isAdmin = false;
-                if (userData && userData.email === OWNER_EMAIL) isAdmin = true;
+                if (currentUser && currentUser.email === OWNER_EMAIL) isAdmin = true;
                 if (adminDoc.exists()) isAdmin = true;
 
                 if (isAdmin) {
@@ -2250,10 +2185,26 @@
                 initAnalytics(db, ownerUid);
 
             } catch (e) {
-                console.error("Error fetching user data:", e);
-                // Even on error, try init analytics as anon/fallback
+                console.error("Error setting up user listener:", e);
                 initAnalytics(db, ownerUid);
             }
+        }
+        
+        // Helper to update the settings panel preview if open
+        function updateSettingsPfpPreview(user, previewEl) {
+             const pfpType = user.pfpType || 'letter';
+             if (pfpType === 'custom' && user.customPfp) {
+                previewEl.style.backgroundImage = `url('${user.customPfp}')`;
+                previewEl.style.backgroundColor = "transparent";
+                previewEl.style.backgroundSize = "cover";
+                previewEl.innerText = "";
+             } else {
+                 const letter = (user.username || 'U').charAt(0).toUpperCase();
+                 const bgColor = user.pfpLetterBg || '#3B82F6';
+                 previewEl.style.backgroundImage = 'none';
+                 previewEl.style.backgroundColor = bgColor;
+                 previewEl.innerText = letter;
+             }
         }
 
         function updateUIWithUser(userData) {
@@ -2397,15 +2348,11 @@
             // Determine start page
             let startPage = 'dashboard.html';
             const lastPage = localStorage.getItem(LAST_PAGE_KEY);
-            const pinned = localStorage.getItem(PINNED_PAGE_KEY);
-            
-            // Priority: Last Page > Pinned > Default
+
+            // Priority: Last Page > > Default
             if (lastPage) {
                  const isValid = Object.values(PAGE_DATA).some(p => p.url === lastPage);
                  if (isValid) startPage = lastPage;
-            } else if (pinned) {
-                const isValid = Object.values(PAGE_DATA).some(p => p.url === pinned);
-                if (isValid) startPage = pinned;
             }
             
             loadPage(startPage);
@@ -2637,11 +2584,20 @@
 
         // --- Settings Data & Actions ---
         
-        // --- 1. General: Username ---
+        // --- 1. General: Username & New Actions ---
         const settingsUsernameInput = document.getElementById('settings-username-input');
         const saveUsernameBtn = document.getElementById('save-username-btn');
         const usernameMsg = document.getElementById('username-msg');
         
+        // Add Disconnect Listener
+        document.getElementById('disconnect-account-btn').addEventListener('click', () => {
+             // Re-use existing logout logic
+             localStorage.removeItem(STORAGE_KEY);
+             localStorage.removeItem(USER_DATA_KEY);
+             if (userDataUnsubscribe) userDataUnsubscribe();
+             location.reload();
+        });
+
         async function checkProfanity(text) {
             try {
                 const res = await fetch(`https://www.purgomalum.com/service/containsprofanity?text=${encodeURIComponent(text)}`);
@@ -2679,9 +2635,7 @@
                 
                 // Save
                 await updateDoc(doc(db, "users", currentUser.uid), { username: newName });
-                currentUser.username = newName;
-                localStorage.setItem(USER_DATA_KEY, JSON.stringify(currentUser));
-                updateUIWithUser(currentUser);
+                // Local update happens via onSnapshot listener now
                 usernameMsg.innerText = "Saved!";
                 usernameMsg.className = "text-green-400 text-xs mt-2 min-h-[20px]";
                 
@@ -2754,10 +2708,7 @@
                     pfpLetterBg: pfpState.letterColor,
                     letterAvatarColor: pfpState.letterColor // Legacy support
                 });
-                // Update local logic if needed
-                currentUser.pfpType = 'letter';
-                currentUser.pfpLetterBg = pfpState.letterColor;
-                localStorage.setItem(USER_DATA_KEY, JSON.stringify(currentUser));
+                // Local update handled by snapshot
                 saveLetterPfpBtn.innerText = "Saved!";
                 setTimeout(() => saveLetterPfpBtn.innerText = "Set Letter Avatar", 2000);
             } catch(e) {
@@ -2923,21 +2874,21 @@
             try {
                 submitCropBtn.disabled = true;
                 submitCropBtn.textContent = "Saving...";
+                
+                // 1. Update Firestore
                 await updateDoc(doc(db, "users", currentUser.uid), { 
                     customPfp: base64,
                     pfpType: 'custom'
                 });
                 
+                // 2. Update Local State Immediately
                 currentUser.customPfp = base64;
                 currentUser.pfpType = 'custom';
                 localStorage.setItem(USER_DATA_KEY, JSON.stringify(currentUser));
+                updateUIWithUser(currentUser);
+                updateSettingsPfpPreview(currentUser, pfpPreview);
                 
-                // Update UI
-                pfpPreview.innerText = "";
-                pfpPreview.style.backgroundImage = `url('${base64}')`;
-                pfpPreview.style.backgroundColor = "transparent";
-                pfpPreview.style.backgroundSize = "cover";
-                
+                // Update UI Feedback
                 cropperModal.style.display = 'none';
                 saveUploadPfpBtn.innerText = "Saved!"; // Feedback on the main btn too
             } catch (e) {
@@ -3151,7 +3102,7 @@
         // Global store for active keys (in-memory)
         window.activePanicKeys = [];
 
-        async function loadPanicKeys() {
+         async function loadPanicKeys() {
             try {
                 const settingsMap = await getPanicKeySettings();
                 window.activePanicKeys = []; // Reset

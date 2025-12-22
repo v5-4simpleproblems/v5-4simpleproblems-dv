@@ -14,14 +14,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <script src="../injector.js"></script>
-
-    <script type="module">
-        import { firebaseConfig } from '../firebase-config.js';
-        // Expose config for use by the modular script below
-        window.firebaseConfig = firebaseConfig;
-    </script>
 
     <style>
         /* --- FONT & BASE STYLING --- */
@@ -286,10 +278,6 @@
 
                         <div class="dropdown-divider border-t border-[#333] my-2"></div>
                         
-
-
-                        <div class="dropdown-divider border-t border-[#333] my-2"></div>
-                        
                         <div id="clear-sounds-btn" class="dropdown-item text-red-500 hover:bg-red-900/20">
                             <span><i class="fa-solid fa-volume-xmark w-5"></i> Stop All Sounds</span>
                             <span class="text-xs text-gray-500 border border-[#333] px-1 rounded">SHIFT+C</span>
@@ -301,24 +289,17 @@
 
         <main class="flex-grow p-5 md:p-8 max-w-7xl mx-auto w-full">
             
-            <div class="mb-8 p-5 rounded-2xl border border-cyan-900/30 bg-cyan-900/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div class="flex-grow">
-                    <h3 class="text-lg text-cyan-400 mb-2 flex items-center gap-2">
-                        <i class="fa-solid fa-globe"></i> Unblockable Soundboard Available
-                    </h3>
-                    <p class="text-sm text-cyan-100/80 leading-relaxed max-w-3xl">
-                        A local soundboard file is available that uses <code class="text-cyan-300 bg-cyan-900/30 px-1 rounded">cdn.jsdelivr.net</code> to bypass the Soundboard game block on the GAMES collection. 
-                        <br>
-                        <span class="text-cyan-300/60 italic text-xs mt-1 block">
-                            <i class="fa-solid fa-triangle-exclamation mr-1"></i>
-                            Note: This contains non-4SP approved sounds. Titles in this version may not accurately explain the sounds they play.
-                        </span>
-                    </p>
-                </div>
-                
-                <a href="../logged-in/third-party-soundboard.html" download="third-party-soundboard.html" class="btn-toolbar-style text-sm whitespace-nowrap shrink-0">
-                    <i class="fa-solid fa-file-arrow-down"></i> <span>Download HTML</span>
-                </a>
+            <div class="mb-8 p-5 rounded-2xl border border-cyan-900/30 bg-cyan-900/10 flex flex-col items-start gap-3">
+                <h3 class="text-lg text-cyan-400 flex items-center gap-2">
+                    <i class="fa-solid fa-server"></i> Integrated Third-Party Soundboard
+                </h3>
+                <p class="text-sm text-cyan-100/80 leading-relaxed max-w-4xl">
+                    Since you are utilizing the downloaded client, the <strong>Third Party Soundboard</strong> is now hosted directly within this page (located at the bottom). There is no need to download separate HTML files or bypass external blocks. 
+                </p>
+                <p class="text-xs text-cyan-300/60 italic border-t border-cyan-800/30 pt-2 mt-1 w-full">
+                    <i class="fa-solid fa-circle-info mr-1"></i>
+                    This direct integration logic has also been applied to the Messenger.
+                </p>
             </div>
 
             <div class="mb-10">
@@ -330,18 +311,22 @@
                 <h2 class="section-header text-red-400/80 border-red-900/30">Explicit Sounds</h2>
                 <div id="explicitSoundsContainer" class="sound-grid"></div>
             </div>
+
+            <div class="mb-10">
+                <h2 class="section-header text-blue-400/80 border-blue-900/30">Third Party Sounds</h2>
+                <div id="thirdPartySoundsContainer" class="sound-grid">
+                     <div class="text-gray-500 italic col-span-full text-center p-10">Loading sounds from CDN...</div>
+                </div>
+            </div>
         </main>
     </div>
 
     <div id="status-toaster"></div>
 
     <script type="module">
-        import { firebaseConfig } from '../firebase-config.js';
         
-        // Import Modular SDKs directly
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        // Import Third Party Sounds from CDN
+        import { sounds as thirdPartySounds } from 'https://cdn.jsdelivr.net/gh/genizy/soundboard@main/sounds.js';
 
         // --- UI & State References ---
         const loadingScreen = document.getElementById('loading-screen');
@@ -355,8 +340,11 @@
         const applyDelayBtn = document.getElementById('applyDelayBtn');
         const clearSoundsBtn = document.getElementById('clear-sounds-btn');
         const statusToaster = document.getElementById('status-toaster');
+        
+        // Sound Containers
         const normalSoundsContainer = document.getElementById('normalSoundsContainer');
         const explicitSoundsContainer = document.getElementById('explicitSoundsContainer');
+        const thirdPartySoundsContainer = document.getElementById('thirdPartySoundsContainer');
         const explicitSectionWrapper = document.getElementById('explicitSectionWrapper');
 
         // --- Soundboard Logic State ---
@@ -366,53 +354,18 @@
         let currentlyHoveredButton = null;
         let toasterTimeout = null;
 
-        // --- Firebase Initialization (Modular) ---
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        function setupAuthAndLoad() {
-            try {
-                onAuthStateChanged(auth, (user) => {
-                    if (user || window._LOCAL_MODE) {
-                        loadingScreen.style.display = 'none';
-                        pageContent.classList.remove('hidden');
-                        loadSoundsLocal();
-                        monitorExplicitSettings();
-                    } else if (!window._LOCAL_MODE) {
-                        window.location.href = '../index.html'; 
-                    }
-                });
-
-
-            } catch (e) {
-                console.error("Auth Setup Error", e);
-            }
-        }
-
-        function monitorExplicitSettings() {
-            try {
-                onSnapshot(doc(db, 'config', 'soundboard'), (docSnap) => {
-                    // Default to true if document doesn't exist or field is missing
-                    let isEnabled = true;
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        if (data.explicitEnabled !== undefined) {
-                            isEnabled = data.explicitEnabled;
-                        }
-                    }
-
-                    if (explicitSectionWrapper) {
-                        if (isEnabled) {
-                            explicitSectionWrapper.style.display = 'block';
-                        } else {
-                            explicitSectionWrapper.style.display = 'none';
-                            stopAllAudios(); // Stop all sounds to be safe as per requirements
-                        }
-                    }
-                });
-            } catch (err) {
-                console.error("Error monitoring explicit settings:", err);
+        function initApp() {
+            // Remove loading screen and show content immediately
+            loadingScreen.style.display = 'none';
+            pageContent.classList.remove('hidden');
+            
+            // Load sounds
+            loadSoundsLocal();
+            loadThirdPartySounds();
+            
+            // Explicit settings defaulted to true (visible) since no DB config
+            if (explicitSectionWrapper) {
+                explicitSectionWrapper.style.display = 'block';
             }
         }
 
@@ -434,23 +387,47 @@
                 
                 const data = await response.json();
 
-                if (data.NormalSounds) data.NormalSounds.forEach(f => createSoundButton(f, normalSoundsContainer));
-                if (data.ExplicitSounds) data.ExplicitSounds.forEach(f => createSoundButton(f, explicitSoundsContainer));
+                if (data.NormalSounds) {
+                    data.NormalSounds.forEach(f => {
+                        const name = f.replace('.mp3', '').replace(/_/g, ' ');
+                        const path = `../sounds/${f}`;
+                        createSoundButton(name, normalSoundsContainer, path);
+                    });
+                }
+                
+                if (data.ExplicitSounds) {
+                    data.ExplicitSounds.forEach(f => {
+                        const name = f.replace('.mp3', '').replace(/_/g, ' ');
+                        const path = `../sounds/${f}`;
+                        createSoundButton(name, explicitSoundsContainer, path);
+                    });
+                }
 
             } catch (error) {
                 console.error("Load Error:", error);
-                showStatus("Unable to load sounds.", "error");
+                showStatus("Unable to load local sounds.", "error");
                 normalSoundsContainer.innerHTML = `<p class="text-red-500 text-sm italic border border-red-900/50 p-2 rounded bg-red-900/10">Unable to load sounds. (Check Console)</p>`;
             }
         }
 
-        function createSoundButton(fileName, container) {
-            const soundName = fileName.replace('.mp3', '').replace(/_/g, ' ');
+        function loadThirdPartySounds() {
+            thirdPartySoundsContainer.innerHTML = '';
+            const baseUrl = "https://cdn.jsdelivr.net/gh/genizy/soundboard@main/";
+            
+            if (thirdPartySounds && Array.isArray(thirdPartySounds)) {
+                thirdPartySounds.forEach(sound => {
+                    const fullAudioUrl = baseUrl + sound.mp3;
+                    createSoundButton(sound.name, thirdPartySoundsContainer, fullAudioUrl);
+                });
+            } else {
+                thirdPartySoundsContainer.innerHTML = '<div class="text-red-500">Failed to load sounds list.</div>';
+            }
+        }
+
+        function createSoundButton(soundName, container, audioPath) {
             const btn = document.createElement('div');
             btn.className = 'sound-btn';
             btn.textContent = soundName;
-            
-            const audioPath = `../sounds/${fileName}`;
             
             btn.addEventListener('click', async () => {
                 if (!soundOverlayCheckbox.checked) stopAllAudios();
@@ -579,7 +556,7 @@
             autoClickDelayInput.value = savedDelay;
 
             if (savedAutoClick) delaySettings.classList.remove('hidden');
-            setupAuthAndLoad();
+            initApp();
         });
     </script>
 </body>
