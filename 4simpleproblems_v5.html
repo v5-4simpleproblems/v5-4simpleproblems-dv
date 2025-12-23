@@ -6,7 +6,7 @@
     <title>4SP - VERSION 5 CLIENT</title>
     <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/npm/4sp-dv@latest/images/logo.png">
 
-    <base href="https://cdn.jsdelivr.net/npm/4sp-dv@1.0.17/logged-in/">
+    <base href="https://cdn.jsdelivr.net/npm/4sp-dv@1.0.18/logged-in/">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
     
@@ -1828,7 +1828,7 @@
         const displayUsername = document.getElementById('display-username');
         const displayEmail = document.getElementById('display-email');
 
-        const BASE_URL = 'https://cdn.jsdelivr.net/npm/4sp-dv@1.0.17/logged-in/';
+        const BASE_URL = 'https://cdn.jsdelivr.net/npm/4sp-dv@1.0.18/logged-in/';
         const STORAGE_KEY = 'local_access_code';
         const USER_DATA_KEY = 'local_user_data';
         const LAST_PAGE_KEY = 'local_last_page';
@@ -1850,7 +1850,7 @@
         let currentUser = null;
         let userDataUnsubscribe = null;
 
-        // --- ADMIN KEYBINDS LOGIC (Integrated) ---
+        // --- ADMIN KEYBINDS LOGIC (Updated to Match admin_keybinds.js exactly) ---
         function initAdminKeybinds(db, auth, user) {
             console.log("[Admin Keybinds] Initializing for", user.uid);
             let explicitEnabled = true;
@@ -1865,7 +1865,7 @@
                 const toast = document.createElement("div");
                 toast.id = "admin-keybind-toast";
 
-                // Styles
+                // Styles matching admin_keybinds.js exactly
                 Object.assign(toast.style, {
                     position: "fixed",
                     bottom: "24px",
@@ -1873,12 +1873,12 @@
                     display: "flex",
                     alignItems: "center",
                     gap: "12px",
-                    backgroundColor: "rgba(13, 13, 13, 0.95)",
+                    backgroundColor: "rgba(13, 13, 13, 0.95)", // Dark glass effect
                     backdropFilter: "blur(5px)",
-                    color: "#c0c0c0",
+                    color: "#c0c0c0", // Light gray text
                     padding: "14px 20px",
                     borderRadius: "12px",
-                    border: "1px solid #333",
+                    border: "1px solid #333", // Dark border
                     fontFamily: "'Geist', 'Roboto', sans-serif",
                     fontSize: "14px",
                     fontWeight: "500",
@@ -1924,8 +1924,10 @@
                         const data = docSnap.data();
                         if (data.explicitEnabled !== undefined) {
                             explicitEnabled = data.explicitEnabled;
+                            console.log(`[Admin Keybinds] Explicit Enabled: ${explicitEnabled}`);
                         }
                     } else {
+                        console.log("[Admin Keybinds] Config doc missing. Defaulting to TRUE.");
                         explicitEnabled = true;
                     }
                 }, (error) => console.error("Config Listen Error:", error));
@@ -1936,11 +1938,14 @@
 
             // Key Listener
             document.addEventListener('keydown', async (e) => {
-                if (e.ctrlKey && e.altKey && (e.key.toLowerCase() === 'e' || e.code === 'KeyE')) {
+                // CHANGED: Trigger is Ctrl + Shift + E as requested
+                if (e.ctrlKey && e.shiftKey && (e.key.toLowerCase() === 'e' || e.code === 'KeyE')) {
                     e.preventDefault();
-                    console.log("[Admin Keybinds] Ctrl+Alt+E detected.");
+                    console.log("[Admin Keybinds] Ctrl+Shift+E detected.");
 
                     if (explicitEnabled) {
+                        // Logic for disabling (Immediate)
+                        console.log("[Admin Keybinds] Disabling explicit sounds...");
                         try {
                             await setDoc(doc(db, 'config', 'soundboard'), { explicitEnabled: false }, { merge: true });
                             showAdminToast("Explicit Sounds: DISABLED", "red");
@@ -1950,8 +1955,10 @@
                             showAdminToast("Error: Check Console", "red");
                         }
                     } else {
+                        // Logic for enabling (Double Press Safety)
                         const now = Date.now();
                         if (now - lastEnablePressTime < 1500) { 
+                            console.log("[Admin Keybinds] Enabling explicit sounds...");
                             try {
                                 await setDoc(doc(db, 'config', 'soundboard'), { explicitEnabled: true }, { merge: true });
                                 showAdminToast("Explicit Sounds: ENABLED", "green");
@@ -1961,7 +1968,8 @@
                                 showAdminToast("Error: Check Console", "red");
                             }
                         } else {
-                            showAdminToast("Press Ctrl+Alt+E again to ENABLE", "blue");
+                            console.log("[Admin Keybinds] Waiting for confirm...");
+                            showAdminToast("Press Ctrl+Shift+E again to ENABLE", "blue");
                             lastEnablePressTime = now;
                         }
                     }

@@ -294,7 +294,7 @@
                 <div id="normalSoundsContainer" class="sound-grid"></div>
             </div>
 
-            <div class="mb-10" id="explicitSectionWrapper">
+            <div class="mb-10" id="explicitSectionWrapper" style="display: none;">
                 <h2 class="section-header text-red-400/80 border-red-900/30">Explicit Sounds</h2>
                 <div id="explicitSoundsContainer" class="sound-grid"></div>
             </div>
@@ -350,6 +350,25 @@
         // Import Third Party Sounds from CDN
         import { sounds as thirdPartySounds } from 'https://cdn.jsdelivr.net/gh/genizy/soundboard@main/sounds.js';
 
+        // --- Firebase Integration ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // Same config as the admin file
+        const firebaseConfig = {
+            apiKey: "AIzaSyAZBKAckVa4IMvJGjcyndZx6Y1XD52lgro",
+            authDomain: "project-zirconium.firebaseapp.com",
+            projectId: "project-zirconium",
+            storageBucket: "project-zirconium.firebasestorage.app",
+            messagingSenderId: "1096564243475",
+            appId: "1:1096564243475:web:6d0956a70125eeea1ad3e6",
+            measurementId: "G-1D4F692C1Q"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
         // --- UI & State References ---
         const loadingScreen = document.getElementById('loading-screen');
         const pageContent = document.getElementById('page-content');
@@ -384,11 +403,36 @@
             // Load sounds
             loadSoundsLocal();
             loadThirdPartySounds();
-            
-            // Explicit settings defaulted to true (visible) since no DB config
-            if (explicitSectionWrapper) {
+
+            // Initialize Config Listener
+            initRealtimeConfig();
+        }
+
+        // --- Firestore Realtime Listener ---
+        function initRealtimeConfig() {
+            const configRef = doc(db, 'config', 'soundboard');
+            onSnapshot(configRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    // Admin toggle logic checks "explicitEnabled". Default to true if field missing but doc exists.
+                    const isExplicitEnabled = data.explicitEnabled !== false;
+                    
+                    if (isExplicitEnabled) {
+                        explicitSectionWrapper.style.display = 'block';
+                    } else {
+                        explicitSectionWrapper.style.display = 'none';
+                        // Optional: Ensure any "explicit" sounds stop playing if they were active?
+                        // For now we just hide the section as per typical admin toggle logic
+                    }
+                } else {
+                    // Doc doesn't exist? Default to true.
+                    explicitSectionWrapper.style.display = 'block';
+                }
+            }, (error) => {
+                console.warn("Config listener error:", error);
+                // Fallback to visible on error
                 explicitSectionWrapper.style.display = 'block';
-            }
+            });
         }
 
         function showStatus(message, type = 'info') {
