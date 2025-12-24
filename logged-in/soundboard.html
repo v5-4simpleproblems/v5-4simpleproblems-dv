@@ -490,7 +490,7 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
 
         async function loadSoundsLocal() {
             try {
-                const response = await fetch('../soundboard_names.json');
+                const response = await fetch('https://cdn.jsdelivr.net/npm/4sp-sounds@latest/soundboard_names.json');
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 
                 const data = await response.json();
@@ -498,7 +498,7 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
                 if (data.NormalSounds) {
                     data.NormalSounds.forEach(f => {
                         const name = f.replace('.mp3', '').replace(/_/g, ' ');
-                        const path = `../sounds/${f}`;
+                        const path = `https://cdn.jsdelivr.net/npm/4sp-sounds@latest/sounds/${f}`;
                         createSoundButton(name, normalSoundsContainer, path);
                     });
                 }
@@ -506,7 +506,7 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
                 if (data.ExplicitSounds) {
                     data.ExplicitSounds.forEach(f => {
                         const name = f.replace('.mp3', '').replace(/_/g, ' ');
-                        const path = `../sounds/${f}`;
+                        const path = `https://cdn.jsdelivr.net/npm/4sp-sounds@latest/sounds/${f}`;
                         createSoundButton(name, explicitSoundsContainer, path);
                     });
                 }
