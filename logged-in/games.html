@@ -210,13 +210,14 @@
         }
 
         .category-badge {
-            font-size: 0.65rem;
-            padding: 2px 6px;
+            font-size: 0.6rem;
+            padding: 1px 6px;
             border-radius: 6px;
-            text-transform: uppercase;
-            font-weight: 600;
-            letter-spacing: 0.025em;
-            margin-left: 8px;
+            font-weight: 400;
+            margin-top: 4px;
+            border: 1px solid currentColor;
+            background: transparent !important;
+            display: inline-block;
         }
 
         @media (max-width: 768px) {
@@ -277,9 +278,9 @@
         }
         #zoneViewer .zone-header .zone-controls button:hover,
         #zoneViewer .zone-header .zone-controls a:hover { 
-            background-color: #252525; 
-            border-color: #fff;
-            color: #fff;
+            background-color: rgba(79, 70, 229, 0.1); 
+            border-color: #4f46e5;
+            color: #4f46e5;
             transform: scale(1.1);
         }
         #zoneViewer iframe { flex-grow: 1; border: none; background-color: #000; }
@@ -753,7 +754,7 @@
                     <div class="absolute inset-0 p-4 sm:p-6 flex flex-col justify-between rounded-2xl">
                         <div class="flex items-start justify-between w-full">
                             <h3 class="text-4xl font-bold text-white truncate drop-shadow-lg" style="max-width: 80%;" title="${game.name}">${game.name}</h3>
-                            <div class="flex items-center space-x-3 bg-black/80 backdrop-blur-md rounded-2xl px-2 py-1">
+                            <div class="flex items-center gap-2 bg-black/80 backdrop-blur-md rounded-2xl p-2">
                                 ${gameButtonsHtml}
                                 ${favoriteButtonHtml}
                             </div>
@@ -808,7 +809,7 @@
                 <div class="relative w-full cursor-pointer group">
                     <div class="aspect-w-3 aspect-h-2"><img data-src="${imgSrc}" alt="${game.name}" class="w-full h-full object-cover"></div>
                     <h3 class="absolute top-2 right-2 z-10 max-w-[80%] bg-black/60 backdrop-blur-md rounded-xl px-3 py-1.5 text-white truncate text-sm font-semibold shadow-lg" title="${game.name}">${game.name}</h3>
-                    <div class="absolute bottom-2 right-2 bg-black/80 backdrop-blur-md rounded-2xl px-2 py-1 flex items-center space-x-2 shadow-lg">
+                    <div class="absolute bottom-2 right-2 bg-black/80 backdrop-blur-md rounded-2xl p-2 flex items-center gap-2 shadow-lg">
                         <button class="btn-card-action play-action" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>
                         <button class="btn-card-action fav-action ${isFavorite ? 'favorited' : ''}" title="${isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button>
                     </div>
@@ -1052,8 +1053,8 @@
                 linkEl.dataset.gameId = game.id;
                 let isFavorite = favorites.includes(String(game.id));
 
-                const catLabel = game.category === 'StrongdogXP' ? 'StrongdogXP' : (game.category === 'GN-Math' ? 'GN-Math' : 'Other');
-                const catColor = game.category === 'StrongdogXP' ? 'bg-strongdog-orange text-black' : (game.category === 'GN-Math' ? 'bg-gn-math text-white' : 'bg-gray-600 text-white');
+                const catLabel = game.category === 'StrongdogXP' ? 'StrongdogXP' : (game.category === 'GN-Math' ? 'GN-Math' : 'Others');
+                const catColor = game.category === 'StrongdogXP' ? 'text-strongdog-orange' : (game.category === 'GN-Math' ? 'text-gn-math' : 'text-gray-400');
 
                 linkEl.innerHTML = `
                     <div class="flex items-center truncate min-w-0">
@@ -1064,7 +1065,7 @@
                         </div>
                     </div>
                     <div class="flex items-center flex-shrink-0">
-                        <div class="bg-black/80 backdrop-blur-md rounded-2xl px-2 py-1 flex items-center space-x-2">
+                        <div class="bg-black/80 backdrop-blur-md rounded-2xl p-2 flex items-center gap-2">
                             <button class="btn-card-action play-action" title="Play Game">
                                 <i class="fa-solid fa-play transition-colors"></i>
                             </button>
