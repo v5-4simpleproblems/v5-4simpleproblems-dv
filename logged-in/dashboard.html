@@ -74,6 +74,7 @@
             
             /* Enable absolute positioning for spinner */
             position: relative; 
+            min-height: 200px; /* Ensure height stability */
         }
 
         .dashboard-widget:hover {
@@ -125,6 +126,12 @@
             width: 1px;
             height: 100px; 
             background-color: #262626;
+            transition: opacity 0.5s ease, width 0.5s ease;
+        }
+        .vertical-divider.hidden-anim {
+            opacity: 0;
+            width: 0;
+            margin: 0; 
         }
 
         /* --- WEATHER STYLES --- */
@@ -134,6 +141,15 @@
             flex-direction: column;
             justify-content: center;
             gap: 0.5rem;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .weather-section.hidden-anim {
+            opacity: 0;
+            transform: translateY(10px);
+            pointer-events: none;
+            position: absolute; /* Take out of flow when hidden */
         }
 
         .weather-main {
@@ -213,6 +229,38 @@
             font-size: 1.2rem;
         }
         
+        /* Retry Button */
+        #retry-weather-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 14px;
+            border: 1px solid #4b5563;
+            background: transparent;
+            color: #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s;
+            transform: scale(0.8) translateY(20px);
+        }
+        #retry-weather-btn:hover {
+            background-color: #374151;
+            color: white;
+            transform: scale(1.1) translateY(0);
+        }
+        #retry-weather-btn.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: scale(1) translateY(0);
+        }
+        
         /* Font Awesome's base spin animation (needed for custom speed) */
         @keyframes fa-spin {
             0% {
@@ -276,9 +324,9 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
                 <div id="clock-date" class="date-display">--------</div>
             </div>
 
-            <div class="vertical-divider"></div>
+            <div class="vertical-divider" id="weather-divider"></div>
 
-            <div class="weather-section">
+            <div class="weather-section" id="weather-content">
                 <div class="weather-main">
                     <div id="w-icon" class="weather-icon"><i class="fa-solid fa-cloud"></i></div>
                     <div id="w-temp" class="weather-temp">--°</div>
@@ -301,6 +349,10 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
                 </div>
             </div>
             
+            <button id="retry-weather-btn" onclick="retryWeather()" title="Retry Weather">
+                <i class="fa-solid fa-cloud-sun"></i>
+            </button>
+
             <div id="weather-loader">
                 <i class="fa-solid fa-circle-notch fa-spin-slow"></i>
             </div>
@@ -329,6 +381,10 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
         const wWindArrow = document.getElementById('w-wind-arrow');
         const wLocLink = document.getElementById('w-location-link');
         const weatherLoader = document.getElementById('weather-loader'); 
+        
+        const weatherContent = document.getElementById('weather-content');
+        const weatherDivider = document.getElementById('weather-divider');
+        const retryBtn = document.getElementById('retry-weather-btn');
 
         // --- LOADER FUNCTIONS ---
         function showLoader() {
@@ -338,6 +394,35 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
         function hideLoader() {
             weatherLoader.classList.remove('loading');
         }
+
+        // --- ERROR STATE UI ---
+        function showRetryState() {
+            hideLoader();
+            weatherContent.classList.add('hidden-anim');
+            weatherDivider.classList.add('hidden-anim');
+            retryBtn.classList.add('visible');
+        }
+
+        function hideRetryState() {
+            retryBtn.classList.remove('visible');
+            // We don't immediately show weatherContent, wait for data or loader
+            // But we can prep them
+            weatherContent.classList.remove('hidden-anim');
+            weatherDivider.classList.remove('hidden-anim');
+        }
+
+        // --- RETRY LOGIC ---
+        window.retryWeather = function() {
+            hideRetryState();
+            showLoader();
+            
+            // If we have coords, use them. If not, re-init.
+            if (CURRENT_LAT && CURRENT_LON) {
+                loadWeatherPrimary(CURRENT_LAT, CURRENT_LON);
+            } else {
+                initWeather();
+            }
+        };
 
         // --- FIREBASE INIT WAITER ---
         function waitForFirebase(callback) {
@@ -416,30 +501,42 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
                 // Cache is fresh, use it
                 console.log("Using cached weather data.");
                 updateWeatherUI(cache.weatherData);
-                hideLoader(); // FIX: Added hideLoader for cache hits
+                hideLoader(); 
+                // Ensure UI is visible
+                weatherContent.classList.remove('hidden-anim');
+                weatherDivider.classList.remove('hidden-anim');
+                retryBtn.classList.remove('visible');
             } else {
                 // Cache is stale or non-existent, fetch new data
                 console.log("Weather cache stale or missing. Fetching new data.");
                 resetWeatherDisplay();
-                loadWeatherWithFallback(lat, lon);
+                loadWeatherPrimary(lat, lon);
             }
         }
 
         // --- LOCATION FETCH (IP Fallback) ---
         async function initWeather() {
-            showLoader(); // Show loader at start of location determination
-        try {
-            const ipRes = await fetch('https://ipapi.co/json/');
-            if (!ipRes.ok) throw new Error('IP API Error');
-            const ipData = await ipRes.json();
-            lat = ipData.latitude;
-            lon = ipData.longitude;
-        } catch (e) {
-            console.warn("IP location fetch failed:", e);
-            // Fallback to New York or handle gracefully
-            lat = 40.7128;
-            lon = -74.0060;
-        }
+            showLoader(); 
+            // Hide previous state to avoid clutter during load
+            weatherContent.classList.add('hidden-anim');
+            weatherDivider.classList.add('hidden-anim');
+            retryBtn.classList.remove('visible');
+
+            try {
+                const ipRes = await fetch('https://ipapi.co/json/');
+                if (!ipRes.ok) throw new Error('IP API Error');
+                const ipData = await ipRes.json();
+                
+                // Store globally so retry can use it
+                CURRENT_LAT = ipData.latitude;
+                CURRENT_LON = ipData.longitude;
+                
+                loadWeatherPrimary(CURRENT_LAT, CURRENT_LON);
+            } catch (e) {
+                console.warn("IP location fetch failed:", e);
+                // Even if location fails, show retry button
+                showRetryState();
+            }
         }
 
         // --- LOCATION FETCH (Browser Geolocation) ---
@@ -449,8 +546,13 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
                 return;
             }
             
-            showLoader(); // Show loader before geolocating
+            showLoader(); 
             resetWeatherDisplay();
+            
+            // Hide content while locating
+            weatherContent.classList.add('hidden-anim');
+            weatherDivider.classList.add('hidden-anim');
+            retryBtn.classList.remove('visible');
 
             try {
                 const pos = await new Promise((resolve, reject) => {
@@ -463,131 +565,33 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
                 CURRENT_LAT = pos.coords.latitude;
                 CURRENT_LON = pos.coords.longitude;
                 
-                // When explicitly asked for new location, bypass cache and force a fetch
-                loadWeatherWithFallback(CURRENT_LAT, CURRENT_LON);
+                loadWeatherPrimary(CURRENT_LAT, CURRENT_LON);
 
             } catch(e) {
                 console.error("Geolocation failed:", e);
-                // Fallback to IP data if browser location fails (which is checked via initWeather)
-                initWeather(); 
+                // On geo fail, try init (IP) again? Or just error state.
+                // Let's go to error state to let user retry or see issue
+                showRetryState();
             }
         }
 
-        // --- FALLBACK LOGIC ---
-        async function loadWeatherWithFallback(lat, lon) {
-            // Loader is already shown by calling functions (initWeather or getUserBrowserLocation)
+        // --- PRIMARY FETCH (OPEN METEO ONLY) ---
+        async function loadWeatherPrimary(lat, lon) {
             try {
-                // 1. Google Weather (using Firebase API Key) - PRIMARY
-                try {
-                    await fetchGoogleWeather(lat, lon);
-                    return;
-                } catch(e) {
-                    console.warn("Google Weather failed, attempting NWS:", e);
-                }
-
-                // 2. NWS - SECONDARY
-                try {
-                    await fetchNWS(lat, lon);
-                    return;
-                } catch(e) {
-                    console.warn("NWS failed, attempting Open-Meteo:", e);
-                }
-
-                // 3. Open-Meteo - TERTIARY
-                try {
-                    await fetchOpenMeteo(lat, lon);
-                } catch(e) {
-                    console.error("All weather sources failed", e);
-                    hideLoader(); // Hide on absolute failure
-                }
-            } catch (finalError) {
-                // Catches errors during the fallback chain setup
-                hideLoader();
+                await fetchOpenMeteo(lat, lon);
+            } catch (error) {
+                console.error("Weather fetch failed:", error);
+                showRetryState();
             }
-        }
-
-        // --- GOOGLE WEATHER FETCH ---
-        async function fetchGoogleWeather(lat, lon) {
-            const apiKey = firebaseConfig.apiKey;
-            const url = `https://weather.googleapis.com/v1/currentConditions:lookup?key=${apiKey}&location.latitude=${lat}&location.longitude=${lon}`;
-            
-            const res = await fetch(url);
-            if (!res.ok) {
-                const errText = await res.text();
-                console.error("Google Weather API Failed. Details:", errText);
-                throw new Error(`Google Weather Error: ${res.status} - ${errText}`);
-            }
-            
-            const data = await res.json();
-            if (!data.currentConditions) throw new Error("Invalid Google Weather Data");
-
-            const curr = data.currentConditions;
-            
-            let tempF = curr.temperature?.value;
-            if (curr.temperature?.unit?.toLowerCase() === 'celsius' || curr.temperature?.unit?.toLowerCase() === 'c') {
-                tempF = (tempF * 9/5) + 32;
-            }
-            
-            const weatherCode = curr.weatherCondition || "CLOUDY"; 
-
-            const weatherData = {
-                temp: Math.round(tempF || 0),
-                iconCode: weatherCode,
-                isDay: true, 
-                high: "--", 
-                low: "--",
-                windSpeed: (curr.windSpeed?.value || 0) + " mph",
-                windDir: curr.windDirection || 0,
-                isNWS: false,
-                isGoogle: true
-            };
-
-            setWeatherCache(weatherData);
-            updateWeatherUI(weatherData);
-            hideLoader(); // Hide loader on success
-        }
-
-        // --- NWS FETCH ---
-        async function fetchNWS(lat, lon) {
-            const pointsRes = await fetch(`https://api.weather.gov/points/${lat},${lon}`);
-            if (!pointsRes.ok) throw new Error("NWS Point Fail");
-            const pointsData = await pointsRes.json();
-            
-            const [forecastRes, hourlyRes] = await Promise.all([
-                fetch(pointsData.properties.forecast),
-                fetch(pointsData.properties.forecastHourly)
-            ]);
-
-            const dailyData = await forecastRes.json();
-            const hourlyData = await hourlyRes.json();
-
-            const current = hourlyData.properties.periods[0];
-            
-            const first24 = hourlyData.properties.periods.slice(0, 24);
-            const temps = first24.map(p => p.temperature);
-            const high = Math.max(...temps);
-            const low = Math.min(...temps);
-
-            const weatherData = {
-                temp: current.temperature,
-                iconCode: current.shortForecast,
-                isDay: current.isDaytime,
-                high: high,
-                low: low,
-                windSpeed: current.windSpeed, 
-                windDir: current.windDirection,
-                isNWS: true
-            };
-
-            setWeatherCache(weatherData);
-            updateWeatherUI(weatherData);
-            hideLoader(); // Hide loader on success
         }
 
         // --- OPEN METEO FETCH ---
         async function fetchOpenMeteo(lat, lon) {
             const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,is_day,weather_code,wind_speed_10m,wind_direction_10m&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`;
+            
             const res = await fetch(url);
+            if (!res.ok) throw new Error("Open-Meteo API response not OK");
+            
             const data = await res.json();
             
             const weatherData = {
@@ -603,7 +607,12 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
 
             setWeatherCache(weatherData);
             updateWeatherUI(weatherData);
-            hideLoader(); // Hide loader on success
+            
+            hideLoader(); 
+            // Success: Reveal UI
+            weatherContent.classList.remove('hidden-anim');
+            weatherDivider.classList.remove('hidden-anim');
+            retryBtn.classList.remove('visible');
         }
 
         // --- UI UPDATE (Unchanged) ---
