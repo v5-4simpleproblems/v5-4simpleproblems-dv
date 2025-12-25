@@ -83,9 +83,9 @@
         .btn-toolbar-style {
             background: var(--menu-bg);
             border: 1px solid var(--menu-border);
-            border-radius: 0.75rem; 
+            border-radius: 14px; /* MATCHES auth-btn */
             color: var(--menu-text);
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 1.25rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
@@ -100,6 +100,7 @@
             background-color: var(--menu-bg);
             border-color: #fff;
             color: var(--tab-hover-text);
+            transform: translateY(-1px);
         }
 
         /* --- Card Action Buttons --- */
@@ -109,7 +110,7 @@
             justify-content: center;
             width: 2.25rem;
             height: 2.25rem;
-            border-radius: 0.5rem;
+            border-radius: 14px; /* MATCHES auth-btn */
             background-color: transparent;
             border: 1px solid transparent;
             color: #9ca3af;
@@ -121,6 +122,7 @@
             background-color: var(--tab-active-bg);
             color: var(--tab-active-text);
             border-color: var(--tab-active-border);
+            transform: scale(1.1);
         }
         
         /* Favorite Button Logic */
@@ -161,31 +163,61 @@
         }
 
         /* --- Animations --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
         @keyframes fadeOut {
             from { opacity: 1; transform: scale(1); }
-            to { opacity: 0; transform: scale(0.95); }
+            to { opacity: 0; transform: scale(0.98); }
         }
-        .fade-out {
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        .animate-fade-out { animation: fadeOut 0.3s ease-out forwards; }
+
+        .fade-out-card {
             animation: fadeOut 0.3s ease-out forwards;
             pointer-events: none;
         }
 
         /* Search Bar & Results */
+        #bottom-fixed-bar {
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+        }
+        #bottom-fixed-bar:focus-within {
+            transform: translateY(-5px);
+            border-color: #4f46e5;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 0 2px rgba(79, 70, 229, 0.2);
+        }
+
         .search-results-container {
             max-height: 300px;
             overflow-y: auto;
             scrollbar-width: thin;
             scrollbar-color: #333 transparent;
+            transition: opacity 0.3s ease;
         }
         .search-item {
             display: flex;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: all 0.2s;
             color: #e5e7eb;
             text-decoration: none;
             padding: 10px 15px;
         }
-        .search-item:hover { background-color: rgba(255, 255, 255, 0.05); }
+        .search-item:hover { 
+            background-color: rgba(255, 255, 255, 0.05); 
+            padding-left: 20px;
+        }
+
+        .category-badge {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.025em;
+            margin-left: 8px;
+        }
 
         @media (max-width: 768px) {
             #bottom-fixed-bar {
@@ -200,45 +232,56 @@
         .aspect-w-3 > * { position: absolute; height: 100%; width: 100%; top: 0; right: 0; bottom: 0; left: 0; }
         
         /* --- Game Viewer Modal --- */
-        #zoneViewer { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); z-index: 5000; flex-direction: column; }
+        #zoneViewer { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background-color: #000; z-index: 5000; flex-direction: column; 
+            opacity: 0;
+        }
+        #zoneViewer.active { display: flex; opacity: 1; }
+
         #zoneViewer .zone-header {
-            background-color: #111111;
-            padding: 12px 20px;
+            background-color: #0a0a0a;
+            padding: 12px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #252525;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-bottom: 1px solid #1a1a1a;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
             flex-shrink: 0;
         }
         #zoneViewer .zone-header .zone-title h2 {
             margin: 0;
-            font-size: 1.3em;
+            font-size: 1.2rem;
             color: #ffffff;
             font-family: 'Geist', sans-serif;
+            font-weight: 500;
         }
-        #zoneViewer .zone-header .zone-controls { display: flex; align-items: center; }
+        #zoneViewer .zone-header .zone-controls { display: flex; align-items: center; gap: 8px; }
+        
         #zoneViewer .zone-header .zone-controls button,
         #zoneViewer .zone-header .zone-controls a {
-            margin-left: 8px;
+            margin: 0;
             width: 40px;
             height: 40px;
-            background-color: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 0.5rem;
+            background-color: #1a1a1a;
+            color: #d1d5db;
+            border: 1px solid #333;
+            border-radius: 14px; /* MATCHES auth-btn */
             cursor: pointer;
-            font-size: 1em;
+            font-size: 1rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background-color 0.2s ease-in-out;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             text-decoration: none;
         }
         #zoneViewer .zone-header .zone-controls button:hover,
-        #zoneViewer .zone-header .zone-controls a:hover { background-color: rgba(255, 255, 255, 0.2); }
+        #zoneViewer .zone-header .zone-controls a:hover { 
+            background-color: #252525; 
+            border-color: #fff;
+            color: #fff;
+            transform: scale(1.1);
+        }
         #zoneViewer iframe { flex-grow: 1; border: none; background-color: #000; }
         .hidden { display: none !important; }
 
@@ -710,7 +753,7 @@
                     <div class="absolute inset-0 p-4 sm:p-6 flex flex-col justify-between rounded-2xl">
                         <div class="flex items-start justify-between w-full">
                             <h3 class="text-4xl font-bold text-white truncate drop-shadow-lg" style="max-width: 80%;" title="${game.name}">${game.name}</h3>
-                            <div class="flex items-center space-x-3 bg-black/80 backdrop-blur-md rounded-xl px-2 py-1">
+                            <div class="flex items-center space-x-3 bg-black/80 backdrop-blur-md rounded-2xl px-2 py-1">
                                 ${gameButtonsHtml}
                                 ${favoriteButtonHtml}
                             </div>
@@ -765,7 +808,7 @@
                 <div class="relative w-full cursor-pointer group">
                     <div class="aspect-w-3 aspect-h-2"><img data-src="${imgSrc}" alt="${game.name}" class="w-full h-full object-cover"></div>
                     <h3 class="absolute top-2 right-2 z-10 max-w-[80%] bg-black/60 backdrop-blur-md rounded-xl px-3 py-1.5 text-white truncate text-sm font-semibold shadow-lg" title="${game.name}">${game.name}</h3>
-                    <div class="absolute bottom-2 right-2 bg-black/80 backdrop-blur-md rounded-xl px-2 py-1 flex items-center space-x-2 shadow-lg">
+                    <div class="absolute bottom-2 right-2 bg-black/80 backdrop-blur-md rounded-2xl px-2 py-1 flex items-center space-x-2 shadow-lg">
                         <button class="btn-card-action play-action" title="Play Game"><i class="fa-solid fa-play transition-colors"></i></button>
                         <button class="btn-card-action fav-action ${isFavorite ? 'favorited' : ''}" title="${isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"><i class="fa-solid fa-star fa-solid-star transition-colors"></i><i class="fa-regular fa-star fa-regular-star transition-colors"></i></button>
                     </div>
@@ -805,7 +848,8 @@
             const zoneFrame = document.getElementById('zoneFrame');
             const zoneNameEl = document.getElementById('zoneNameEl');
             const downloadBtn = document.getElementById('downloadBtnZone');
-            
+            const controls = zoneViewer.querySelector('.zone-controls');
+
             // Setup Download Button (Specific to Eaglercraft)
             if (game.baseGameId === 'other-eaglercraft' || game.id === 'other-eaglercraft') {
                 downloadBtn.href = game.url;
@@ -818,6 +862,26 @@
                 downloadBtn.removeAttribute('download');
             }
 
+            // --- INJECT FAVORITE BUTTON IN PLAYER HEADER ---
+            // Remove existing if any
+            const existingFav = controls.querySelector('.player-fav-btn');
+            if (existingFav) existingFav.remove();
+
+            const favBtn = document.createElement('button');
+            favBtn.className = 'player-fav-btn btn-card-action fav-action';
+            favBtn.innerHTML = '<i class="fa-solid fa-star fa-solid-star"></i><i class="fa-regular fa-star fa-regular-star"></i>';
+            const isFavorited = getFavorites().map(String).includes(String(game.id));
+            if (isFavorited) favBtn.classList.add('favorited');
+            
+            favBtn.onclick = (e) => {
+                e.stopPropagation();
+                toggleFavorite(game.id);
+                favBtn.classList.toggle('favorited');
+            };
+
+            // Prepend to controls (Left side)
+            controls.prepend(favBtn);
+
             zoneNameEl.textContent = game.name;
             
             // RESET FRAME BEFORE LOAD
@@ -829,16 +893,16 @@
             zoneFrame.setAttribute('allow', 'fullscreen; pointer-lock; autoplay; clipboard-write');
 
             // --- REVISED LOGIC FOR LOADING GAMES ---
-            // With raw.githack.com, we can treat GN-Math games as standard URL games again
-            // because Githack serves correct Content-Type: text/html headers.
             const isStandardURLGame = game.category === 'StrongdogXP' || game.category === 'Others' || game.category === 'GN-Math';
             
             if (isStandardURLGame) {
-                // Load URL directly for standard games
                 zoneFrame.src = game.url;
+                
+                // SHOW WITH ANIMATION
                 zoneViewer.style.display = "flex";
+                zoneViewer.classList.remove('animate-fade-out');
+                zoneViewer.classList.add('active', 'animate-fade-in');
             } else {
-                // Fallback for other potential categories (same logic as before: fetch & write)
                 fetch(`${game.url}?t=${Date.now()}`)
                     .then(response => {
                         if (!response.ok) throw new Error(`HTTP error ${response.status}`);
@@ -849,29 +913,43 @@
                         doc.open();
                         doc.write(html);
                         doc.close();
+                        
+                        // SHOW WITH ANIMATION
                         zoneViewer.style.display = "flex";
+                        zoneViewer.classList.remove('animate-fade-out');
+                        zoneViewer.classList.add('active', 'animate-fade-in');
                     })
                     .catch(error => {
                         console.error(`Failed to load game "${game.name}": ${error.message}`);
                         zoneFrame.src = game.url;
+                        
                         zoneViewer.style.display = "flex";
+                        zoneViewer.classList.remove('animate-fade-out');
+                        zoneViewer.classList.add('active', 'animate-fade-in');
                     });
             }
         }
 
         function closeZoneViewer() {
-            updateURL(categories[currentCategoryIndex]);
-            const downloadBtn = document.getElementById('downloadBtnZone');
-            downloadBtn.classList.add('hidden');
-            downloadBtn.href = '#';
-            downloadBtn.removeAttribute('download');
-            downloadBtn.removeAttribute('target');
             const zoneViewer = document.getElementById('zoneViewer');
             const zoneFrame = document.getElementById('zoneFrame');
-            zoneViewer.style.display = "none";
-            if (zoneFrame) {
-                zoneFrame.src = 'about:blank';
-            }
+            
+            zoneViewer.classList.remove('animate-fade-in');
+            zoneViewer.classList.add('animate-fade-out');
+            
+            setTimeout(() => {
+                zoneViewer.style.display = "none";
+                zoneViewer.classList.remove('active', 'animate-fade-out');
+                if (zoneFrame) {
+                    zoneFrame.src = 'about:blank';
+                }
+                updateURL(categories[currentCategoryIndex]);
+                const downloadBtn = document.getElementById('downloadBtnZone');
+                downloadBtn.classList.add('hidden');
+                downloadBtn.href = '#';
+                downloadBtn.removeAttribute('download');
+                downloadBtn.removeAttribute('target');
+            }, 300);
         }
 
         // --- Render Lists ---
@@ -893,16 +971,10 @@
                     else if (game.versions) { 
                         game.versions.forEach(v => { 
                             if (favoriteIds.includes(String(v.favoriteId))) {
-                                // Need to resolve URL here for favorites too!
                                 let vUrl = v.url;
                                 if (game.category === 'Others' || game.category === 'Gameboy Games') {
                                     vUrl = resolveGameUrl(v.url);
-                                } else if (game.category === 'StrongdogXP') {
-                                    // Strongdog favorites usually just rely on the ID to regenerate logic, but for safety in this object:
-                                    // Logic remains handled inside createGameCard via ID lookup generally, but let's leave as is 
-                                    // because strongdog logic inside createGameCard regenerates paths based on ID/Page props anyway.
                                 }
-
                                 favoriteGames.push({ ...game, id: v.favoriteId, name: `${game.name} - ${v.name}`, url: vUrl, versions: undefined }); 
                             }
                         }); 
@@ -980,13 +1052,19 @@
                 linkEl.dataset.gameId = game.id;
                 let isFavorite = favorites.includes(String(game.id));
 
+                const catLabel = game.category === 'StrongdogXP' ? 'StrongdogXP' : (game.category === 'GN-Math' ? 'GN-Math' : 'Other');
+                const catColor = game.category === 'StrongdogXP' ? 'bg-strongdog-orange text-black' : (game.category === 'GN-Math' ? 'bg-gn-math text-white' : 'bg-gray-600 text-white');
+
                 linkEl.innerHTML = `
                     <div class="flex items-center truncate min-w-0">
                         <img src="${imgSrc}" alt="${game.name}" class="w-10 h-10 rounded-lg object-cover flex-shrink-0">
-                        <span class="ml-3 font-medium truncate text-gray-200" title="${game.name}">${game.name}</span>
+                        <div class="flex flex-col ml-3 truncate min-w-0">
+                            <span class="font-medium truncate text-gray-200" title="${game.name}">${game.name}</span>
+                            <span class="category-badge w-fit ${catColor}">${catLabel}</span>
+                        </div>
                     </div>
                     <div class="flex items-center flex-shrink-0">
-                        <div class="bg-black/80 backdrop-blur-md rounded-xl px-2 py-1 flex items-center space-x-2">
+                        <div class="bg-black/80 backdrop-blur-md rounded-2xl px-2 py-1 flex items-center space-x-2">
                             <button class="btn-card-action play-action" title="Play Game">
                                 <i class="fa-solid fa-play transition-colors"></i>
                             </button>
