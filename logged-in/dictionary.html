@@ -274,10 +274,6 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
     
 </head>
 <body class="min-h-screen">
-    
-    <div id="loading-screen" class="fixed inset-0 bg-[#040404] flex items-center justify-center z-50">
-        <i class="fa-solid fa-spinner fa-spin fa-2x text-white"></i>
-    </div>
 
     <div id="page-content" class="hidden">
         
@@ -298,12 +294,14 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
                 />
                 <i class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-500"></i>
                 
-                <button 
-                    id="search-button" 
-                    class="btn-toolbar-style btn-primary-override absolute right-2 top-1/2 transform -translate-y-1/2 h-10 px-4"
-                    title="Search">
-                    <i class="fa-solid fa-arrow-right"></i>
-                </button>
+                <div class="absolute right-2 top-1/2 transform -translate-y-1/2">
+                    <button 
+                        id="search-button" 
+                        class="btn-toolbar-style btn-primary-override h-10 px-4"
+                        title="Search">
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
             </div>
 
             <div id="definition-output" class="dictionary-content-box">
@@ -322,6 +320,7 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
         import { firebaseConfig } from "../firebase-config.js"; 
 
         // --- CONFIGURATION ---
+        // Hardcoded API keys as requested
         const DICT_KEY = 'e9433acb-a413-4034-b379-c04f65ba4728';
         const THES_KEY = '14361996-c9fa-4e29-ac53-bb70eb0647e7';
 
@@ -332,7 +331,6 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
 
         // --- DOM Elements ---
         const pageContent = document.getElementById('page-content');
-        const loadingScreen = document.getElementById('loading-screen');
         const searchInput = document.getElementById('search-input');
         const searchButton = document.getElementById('search-button');
         const definitionOutput = document.getElementById('definition-output');
@@ -628,12 +626,8 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
 
         onAuthStateChanged(auth, (user) => {
             if (user || window._LOCAL_MODE) {
-                loadingScreen.classList.add('fade-out');
-                setTimeout(() => {
-                    loadingScreen.style.display = 'none';
-                    pageContent.classList.remove('hidden');
-                    pageContent.classList.add('fade-in');
-                }, 500);
+                pageContent.classList.remove('hidden');
+                pageContent.classList.add('fade-in');
             } else if (!window._LOCAL_MODE) {
                 window.location.href = '../index.html'; 
             }
