@@ -102,7 +102,7 @@
         display: flex; 
         align-items: center; 
         justify-content: center; 
-        color: #ffffff; 
+        color: var(--glide-btn-color, #ffffff); 
         font-size: 1rem; 
         cursor: pointer; 
         opacity: 1; 
@@ -181,27 +181,71 @@
 
     /* Auth Menu & Settings */
     .auth-menu {
-        position: absolute; right: 0; top: 50px; width: 14rem;
+        position: absolute; 
+        right: 0; 
+        top: 55px; 
+        width: 16rem;
         background: var(--menu-bg, #000); 
-        border: 1px solid var(--menu-border, #374151); 
-        border-radius: 0.75rem;
-        padding: 0.5rem; display: none; flex-direction: column; gap: 0.25rem; z-index: 50;
+        border: 1px solid var(--menu-border, #333); 
+        border-radius: 1.5rem;
+        padding: 0.75rem; 
+        display: none; 
+        flex-direction: column; 
+        gap: 0.5rem; 
+        z-index: 50;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        transform-origin: top right;
     }
-    .auth-menu.open { display: flex; }
+    
+    @keyframes menu-pop-in {
+        0% { opacity: 0; transform: translateY(-10px) scale(0.95); }
+        70% { transform: translateY(2px) scale(1.01); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    
+    .auth-menu.open { 
+        display: flex; 
+        animation: menu-pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
     
     .auth-menu-item {
-        display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem;
+        display: flex; 
+        align-items: center; 
+        gap: 0.75rem; 
+        padding: 0.75rem 1rem;
         color: var(--menu-text, #d1d5db); 
-        border-radius: 0.5rem; text-decoration: none; font-size: 0.875rem;
-        transition: background 0.15s; cursor: pointer;
+        background: #0a0a0a;
+        border: 1px solid #333;
+        border-radius: 1rem;
+        text-decoration: none; 
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        cursor: pointer;
     }
+    
     .auth-menu-item:hover { 
-        background-color: var(--menu-item-hover-bg, #374151); 
-        color: var(--menu-item-hover-text, white); 
+        background-color: #000; 
+        border-color: #fff; 
+        color: #fff;
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 0 5px 15px rgba(255,255,255,0.05);
     }
+
+    .auth-menu-item:active {
+        transform: translateY(0) scale(0.98);
+    }
+
+    .auth-menu-item .fa-gear {
+        display: inline-block;
+        transform-origin: center;
+        /* Quick transition for each "click" step */
+        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
     .auth-header { 
-        padding: 0.5rem; 
-        border-bottom: 1px solid var(--menu-divider, #374151); 
+        padding: 0.5rem 1rem; 
+        border-bottom: 1px solid var(--menu-divider, #333); 
         margin-bottom: 0.25rem; 
     }
     .auth-username { color: var(--menu-username-text, white); font-weight: 400; font-size: 0.9rem; }
@@ -447,6 +491,16 @@
     }
 
     /* Notifications */
+    #notification-container {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        z-index: 9999;
+        pointer-events: none;
+    }
     .notification-toast {
         background-color: #0a0a0a; border: 1px solid #333; border-radius: 14px;
         padding: 0.75rem 1.25rem; color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
@@ -520,7 +574,7 @@
                         <div class="auth-username" id="display-username">Client User</div>
                         <div class="auth-email" id="display-email">local@client</div>
                     </div>
-                    <a href="#" class="auth-menu-item" onclick="loadPage('settings.html'); return false;">
+                    <a href="#" id="auth-settings-btn" class="auth-menu-item" onclick="loadPage('settings.html'); return false;">
                         <i class="fa-solid fa-gear w-4"></i> Settings
                     </a>
                     <div class="auth-menu-item text-red-400 hover:text-red-300" id="logout-btn">
@@ -1069,10 +1123,11 @@
             
             let currentPath = activePageUrl.replace(BASE_URL, '');
             
-            Object.values(PAGE_DATA).forEach(page => {
+            Object.entries(PAGE_DATA).forEach(([key, page]) => {
                 const isAuth = page.url === currentPath;
                 const tab = document.createElement('a');
                 tab.className = `nav-tab ${isAuth ? 'active' : ''}`;
+                if (key === 'settings') tab.id = 'nav-settings-tab';
                 tab.innerHTML = `<i class="${page.icon}"></i> ${page.name}`;
                 tab.onclick = () => loadPage(page.url);
                 tabsContainerEl.appendChild(tab);
@@ -2182,6 +2237,10 @@
             // Save to local storage for persistence on reload
             localStorage.setItem('user-navbar-theme', JSON.stringify(theme));
             
+            // Apply Glide Button Color Sync
+            const glideColor = theme['tab-active-text'] || theme['accent-color'] || '#ffffff';
+            root.style.setProperty('--glide-btn-color', glideColor);
+
             // Also update user doc if logged in
             if (currentUser) {
                 updateDoc(doc(db, "users", currentUser.uid), { navbarTheme: theme }).catch(console.error);
@@ -2517,6 +2576,92 @@
         osc.start();
         osc.stop(audioCtx.currentTime + 0.015);
     }
+
+    window.playMechClick = function(isReverse = false) {
+        if (isMuted) return;
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+        
+        const noiseGainVal = isReverse ? 0.015 : 0.02;
+        const pitchFreq = isReverse ? 100 : 150;
+
+        // High-frequency noise burst
+        const bufferSize = audioCtx.sampleRate * 0.01;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.value = isReverse ? 3000 : 5000;
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(noiseGainVal, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.01);
+        
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+        noise.start();
+        noise.stop(now + 0.01);
+
+        // Low-frequency "thud"
+        const osc = audioCtx.createOscillator();
+        const oscGain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(pitchFreq, now);
+        oscGain.gain.setValueAtTime(0.01, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+        osc.connect(oscGain);
+        oscGain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(now + 0.02);
+    };
+
+    // Gear Clicking Sequence
+    let gearHoverStartTime = 0;
+    let currentGearRotation = 0;
+    const gearClickDelays = [0, 120, 240, 360]; // Adjusted for 0.5s total
+
+    const handleGearMouseOver = (e) => {
+        const target = e.target.closest('#auth-settings-btn, #nav-settings-tab');
+        if (target) {
+            const icon = target.querySelector('.fa-gear');
+            gearHoverStartTime = Date.now();
+            gearClickDelays.forEach((delay, index) => {
+                setTimeout(() => {
+                    if (target.matches(':hover')) {
+                        currentGearRotation = (index + 1) * 45;
+                        icon.style.transform = `rotate(${currentGearRotation}deg)`;
+                        window.playMechClick(false);
+                    }
+                }, delay);
+            });
+        }
+    };
+
+    const handleGearMouseOut = (e) => {
+        const target = e.target.closest('#auth-settings-btn, #nav-settings-tab');
+        if (target) {
+            const icon = target.querySelector('.fa-gear');
+            const elapsed = Date.now() - gearHoverStartTime;
+            const clickCount = gearClickDelays.filter(d => d <= elapsed).length;
+            
+            for (let i = 0; i < clickCount; i++) {
+                setTimeout(() => {
+                    if (!target.matches(':hover')) {
+                        currentGearRotation -= 45;
+                        icon.style.transform = `rotate(${currentGearRotation}deg)`;
+                        window.playMechClick(true);
+                    }
+                }, gearClickDelays[i]);
+            }
+        }
+    };
+
+    document.addEventListener('mouseover', handleGearMouseOver);
+    document.addEventListener('mouseout', handleGearMouseOut);
 
     const notificationContainer = document.getElementById('notification-container');
     function showNotification(message, iconClass = 'fa-solid fa-info-circle', type = 'info') {

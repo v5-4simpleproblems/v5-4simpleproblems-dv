@@ -331,6 +331,24 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #555; }
+        @keyframes popOut {
+            0% { transform: scale(1); opacity: 1; }
+            40% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        .animate-pop-out { animation: popOut 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        .particle {
+            position: fixed;
+            pointer-events: none;
+            border-radius: 50%;
+            z-index: 10000;
+            animation: particle-fly 0.6s ease-out forwards;
+        }
+        @keyframes particle-fly {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+        }
     </style>
 </head>
 
@@ -580,25 +598,47 @@
         const getFavorites = () => JSON.parse(localStorage.getItem(FAVORITES_KEY)) || [];
         const saveFavorites = (favs) => localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
         
+        function createParticles(x, y, color) {
+            for (let i = 0; i < 8; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+                p.style.width = '6px';
+                p.style.height = '6px';
+                p.style.backgroundColor = color || '#facc15';
+                
+                const dx = (Math.random() - 0.5) * 100;
+                const dy = (Math.random() - 0.5) * 100;
+                p.style.setProperty('--dx', dx + 'px');
+                p.style.setProperty('--dy', dy + 'px');
+                
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 600);
+            }
+        }
+
         function toggleFavorite(gameId) {
             const strGameId = String(gameId);
             let favorites = getFavorites().map(String);
-            const isFavorited = favorites.includes(strGameId);
+            const isRemoving = favorites.includes(strGameId);
 
-            if (isFavorited) {
+            if (isRemoving) {
                 favorites = favorites.filter(id => id !== strGameId);
                 saveFavorites(favorites);
                 updateAllFavoriteButtons();
-                const favCard = favoritesGameList.querySelector(`.zone-item[data-game-id='${strGameId}'], .other-zone-item[data-game-id='${strGameId}']`);
+                const favCard = favoritesGameList.querySelector(`[data-game-id='${strGameId}']`);
                 if (favCard) {
-                    favCard.classList.add('fade-out');
+                    const rect = favCard.getBoundingClientRect();
+                    createParticles(rect.left + rect.width / 2, rect.top + rect.height / 2, '#facc15');
+                    favCard.classList.add('animate-pop-out');
                     setTimeout(() => {
                         favCard.remove();
                         if (favoritesGameList.children.length === 0) {
                             favoritesHeader.style.display = 'none';
                             favoritesGameList.style.display = 'none';
                         }
-                    }, 300); 
+                    }, 400); 
                 }
             } else {
                 favorites.push(strGameId);
@@ -610,7 +650,7 @@
                         if (g.versions) {
                             const ver = g.versions.find(v => String(v.favoriteId) === strGameId);
                             if (ver) {
-                                gameData = { ...g, id: ver.favoriteId, name: `${g.name} - ${ver.name}`, url: ver.url, versions: undefined };
+                                gameData = { ...g, id: ver.favoriteId, name: `${game.name} - ${ver.name}`, url: ver.url, versions: undefined };
                                 return true;
                             }
                         }
@@ -620,9 +660,7 @@
                 if (gameData) {
                     favoritesHeader.style.display = "block";
                     favoritesGameList.style.display = "grid";
-                    favoritesGameList.classList.add('grid', 'grid-cols-2', 'sm:grid-cols-3', 'md:grid-cols-5', 'lg:grid-cols-7', 'gap-4');
-                    const newCard = createGameCard(gameData, true);
-                    favoritesGameList.appendChild(newCard);
+                    favoritesGameList.appendChild(createGameCard(gameData, true));
                 }
             }
         }
