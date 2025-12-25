@@ -11,134 +11,175 @@
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     
-    <!-- FontAwesome 6.5.2 (Free CDN) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="../navigation.js"></script>
     <script src="../injector.js"></script>
 
     <style>
-        /* --- 4SP BASE STYLING --- */
+        /* --- 4SP BASE STYLING (MATCHING notes.html) --- */
         :root {
+            --bg-page: #040404;
+            --bg-container: #000000;
+            --border-color: #333;
+            --text-primary: #c0c0c0;
+            --color-indigo: #4f46e5;
             --menu-bg: #000000;
             --menu-border: #333;
-            --menu-text: #d1d5db;
-            --menu-item-hover-bg: #2a2a2a;
-            --accent-bg: rgba(79, 70, 229, 0.1);
-            --accent-border: #4f46e5;
-            --accent-text: #6366f1;
         }
 
         body { 
             font-family: 'Geist', sans-serif; 
-            background-color: #040404; 
-            color: #c0c0c0; 
+            background-color: var(--bg-page);
+            color: var(--text-primary);
             transition: all 0.3s ease;
             font-size: 16px;
             overflow-x: hidden;
             font-weight: 300;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         h1, h2, h3, .font-bold, .font-semibold, strong {
-            font-weight: 400 !important; /* Maintain the thin Geist look */
+            font-weight: 400 !important;
         }
 
-        /* --- BUTTONS & CONTROLS --- */
-        .btn-toolbar {
-            background: var(--menu-bg);
-            border: 1px solid var(--menu-border);
+        /* --- UI COMPONENTS (MATCHING notes.html) --- */
+        .btn-toolbar-style {
+            background: var(--menu-bg, #000000);
+            border: 1px solid var(--menu-border, #333);
             border-radius: 0.75rem;
-            color: var(--menu-text);
+            color: #d1d5db;
             padding: 0.5rem 1rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 0.5rem;
-            font-size: 0.9rem;
         }
-        .btn-toolbar:hover {
-            background-color: var(--menu-item-hover-bg);
-            border-color: #555;
-            color: #fff;
+        
+        .btn-toolbar-style:hover {
+            background-color: #000000;
+            border-color: #fff;
+            color: #ffffff;
         }
-        .btn-toolbar.active {
-            background-color: var(--accent-bg);
-            border-color: var(--accent-border);
-            color: var(--accent-text);
+        
+        .btn-toolbar-style.btn-primary-override {
+            background-color: rgba(79, 70, 229, 0.1);
+            border: 1px solid #4f46e5;
+            color: #4f46e5;
+        }
+        .btn-toolbar-style.btn-primary-override:hover {
+            background-color: rgba(79, 70, 229, 0.15);
+            border-color: #6366f1;
+            color: #6366f1;
         }
 
-        /* --- SEARCH & DROPDOWN --- */
-        .search-input {
-            background: var(--menu-bg);
-            border: 1px solid var(--menu-border);
-            border-radius: 0.75rem;
-            color: #fff;
-            padding: 0.5rem 1rem;
-            padding-right: 2.5rem; /* Space for icon */
-            font-weight: 400;
-            width: 260px;
+        /* Input Styling */
+        .input-text-style {
+            width: 100%; 
+            padding: 0.6rem 1rem; 
+            border: 1px solid #333; 
+            background-color: #000000; 
+            border-radius: 0.75rem; 
+            color: #c0c0c0; 
             transition: all 0.2s;
-            outline: none;
+            font-size: 0.95rem;
+            font-weight: 300;
         }
-        .search-input:focus {
-            border-color: var(--accent-border);
-            box-shadow: 0 0 0 1px var(--accent-border);
+        .input-text-style:focus {
+            border-color: #505050; 
+            outline: none;
+            box-shadow: none;
+        }
+
+        /* --- LAYOUT UTILS --- */
+        #page-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-bottom: 1px solid #1a1a1a;
+            background-color: var(--bg-page);
+        }
+        @media(min-width: 768px) {
+            header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+
+        /* --- SEARCH DROPDOWN --- */
+        .search-container {
+            position: relative;
+            width: 100%;
+            max-width: 350px;
         }
         
         .search-dropdown {
             position: absolute;
-            top: 100%;
+            top: calc(100% + 0.5rem);
             left: 0;
             right: 0;
-            margin-top: 0.5rem;
-            background: #0d0d0d;
+            background: #000000;
             border: 1px solid #333;
-            border-radius: 0.75rem;
+            border-radius: 1rem;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             z-index: 100;
             max-height: 300px;
             overflow-y: auto;
             display: none;
+            padding: 0.5rem;
         }
         .search-dropdown.active {
             display: block;
+            animation: fadeIn 0.2s ease-out;
         }
-        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
         .search-item {
-            padding: 0.75rem 1rem;
+            padding: 0.6rem 0.8rem;
             cursor: pointer;
-            border-bottom: 1px solid #1a1a1a;
+            border-radius: 0.5rem;
             display: flex;
             flex-direction: column;
             gap: 2px;
             transition: background 0.2s;
+            border-bottom: 1px solid transparent;
         }
-        .search-item:last-child { border-bottom: none; }
-        .search-item:hover { background: #1a1a1a; }
-        .search-item-main { color: #fff; font-size: 0.95rem; }
-        .search-item-sub { color: #707070; font-size: 0.8rem; }
+        .search-item:hover { background: #1a1a1a; color: #fff; }
+        .search-item-main { font-size: 0.95rem; color: #e5e7eb; }
+        .search-item-sub { color: #6b7280; font-size: 0.8rem; }
         
-        .geo-btn {
+        .geo-btn-absolute {
             position: absolute;
             right: 0.75rem;
             top: 50%;
             transform: translateY(-50%);
-            color: #707070;
+            color: #6b7280;
             cursor: pointer;
             transition: color 0.2s;
             background: none;
             border: none;
         }
-        .geo-btn:hover { color: var(--accent-text); }
-        .geo-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .geo-btn-absolute:hover { color: #4f46e5; }
 
         /* --- WEATHER CARDS --- */
         .weather-card {
             background-color: #0d0d0d;
             border: 1px solid #1a1a1a;
-            border-radius: 1rem;
+            border-radius: 1.5rem;
             padding: 1.5rem;
             transition: border-color 0.2s;
         }
@@ -149,42 +190,53 @@
         /* Hero Section */
         .current-temp {
             font-family: 'Roboto', sans-serif;
-            font-size: 5rem;
+            font-size: 4rem;
             font-weight: 300;
             color: #fff;
             line-height: 1;
         }
         .current-icon {
-            font-size: 4rem;
-            color: var(--accent-text);
+            font-size: 3rem;
+            color: var(--color-indigo);
         }
 
-        /* Hourly Scroll */
+        /* Hourly Scroll with Fading Edges */
+        .scroll-mask-container {
+            position: relative;
+            width: 100%;
+            /* CSS Mask for fading edges */
+            -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+        }
+        
         .hourly-container {
             display: flex;
             overflow-x: auto;
-            gap: 1rem;
-            padding-bottom: 1rem;
-            margin-top: 1rem;
-            scrollbar-width: thin;
-            scrollbar-color: #333 #0d0d0d;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem; /* Extra padding for the mask to not cut off content immediately */
+            margin-top: 0.5rem;
+            scrollbar-width: none; /* Hide scrollbar Firefox */
+            -ms-overflow-style: none;  /* Hide scrollbar IE/Edge */
         }
+        .hourly-container::-webkit-scrollbar { display: none; } /* Hide scrollbar Chrome */
+
         .hourly-item {
             min-width: 80px;
             background: #111;
             border: 1px solid #222;
-            border-radius: 0.75rem;
+            border-radius: 1rem;
             padding: 1rem 0.5rem;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 0.5rem;
-            cursor: pointer; /* Added cursor */
-            transition: background 0.2s;
+            cursor: pointer;
+            transition: all 0.2s;
         }
         .hourly-item:hover {
             background: #1a1a1a;
             border-color: #333;
+            transform: translateY(-2px);
         }
         .hourly-time { font-size: 0.8rem; color: #707070; }
         .hourly-temp { font-weight: 500; color: #fff; }
@@ -194,9 +246,12 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1rem 0;
+            padding: 1rem 0.5rem;
             border-bottom: 1px solid #1a1a1a;
+            transition: background 0.2s;
+            border-radius: 1rem;
         }
+        .daily-row:hover { background-color: #111; }
         .daily-row:last-child { border-bottom: none; }
         .daily-day { width: 100px; font-weight: 500; color: #fff; }
         .daily-icon { width: 40px; text-align: center; color: #9ca3af; }
@@ -217,21 +272,12 @@
             gap: 1rem;
             transition: opacity 0.5s;
         }
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid #333;
-            border-top-color: var(--accent-border);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
         
         /* --- MODAL (HOURLY) --- */
         #hourly-modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.8);
             backdrop-filter: blur(5px);
             z-index: 60;
             display: flex;
@@ -245,7 +291,7 @@
         .modal-content {
             background: #0d0d0d;
             border: 1px solid #333;
-            border-radius: 1rem;
+            border-radius: 2rem;
             padding: 2rem;
             width: 90%;
             max-width: 400px;
@@ -253,28 +299,22 @@
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
+            transform: scale(0.95);
+            transition: transform 0.2s;
         }
-        .modal-header-text { font-size: 1.5rem; color: #fff; font-weight: 400; }
+        #hourly-modal-overlay.active .modal-content { transform: scale(1); }
+        
+        .modal-header-text { font-size: 1.25rem; color: #fff; font-weight: 400; }
         .detail-row { display: flex; justify-content: space-between; border-bottom: 1px solid #1a1a1a; padding-bottom: 0.5rem; }
         .detail-label { color: #707070; font-size: 0.9rem; }
         .detail-value { color: #fff; font-weight: 500; }
-        .close-modal-btn {
-            background: var(--menu-bg);
-            border: 1px solid var(--menu-border);
+        
+        /* Provider Select styling fix */
+        select option {
+            background: #000;
             color: #fff;
-            padding: 0.5rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            text-align: center;
-            margin-top: 0.5rem;
+            padding: 10px;
         }
-        .close-modal-btn:hover { background: #1a1a1a; }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #040404; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
     
 /* INJECTED STYLES */
 :root { --bg-page: #040404; --bg-container: #000000; --border-color: #333; --text-primary: #c0c0c0; --text-light-grey: #d1d5db; --accent-color: #6366f1; --navbar-bg: #000000; --navbar-border: #1f2937; --tab-text: #9ca3af; --tab-hover-text: #ffffff; --tab-active-text: #4f46e5; --tab-active-bg: rgba(79, 70, 229, 0.1); --tab-active-border: #4f46e5; }
@@ -320,15 +360,13 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
 </style>
     
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen">
 
-    <!-- LOADING OVERLAY -->
     <div id="loading-overlay">
-        <div class="spinner"></div>
+        <i class="fa-solid fa-spinner fa-spin fa-2x text-white mb-4"></i>
         <div id="loading-text" class="text-sm tracking-widest uppercase text-gray-500">Locating...</div>
     </div>
     
-    <!-- HOURLY DETAIL MODAL -->
     <div id="hourly-modal-overlay">
         <div class="modal-content">
             <div class="flex items-center gap-4">
@@ -338,54 +376,46 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
                     <div id="modal-desc" class="text-gray-400 text-sm"></div>
                 </div>
             </div>
-            <div id="modal-details-list" class="flex flex-col gap-3">
-                <!-- Injected Details -->
-            </div>
-            <button class="close-modal-btn" onclick="closeHourlyModal()">Close</button>
+            <div id="modal-details-list" class="flex flex-col gap-3 pt-2">
+                </div>
+            <button class="btn-toolbar-style w-full mt-4" onclick="closeHourlyModal()">Close</button>
         </div>
     </div>
 
-    <!-- HEADER -->
-    <header class="flex flex-col md:flex-row justify-between items-center p-6 border-b border-[#1a1a1a] gap-4">
-        <div class="w-full md:w-auto">
+    <header>
+        <div>
             <h1 class="text-2xl font-bold text-white tracking-wide">4SP WEATHER</h1>
             <div id="location-display" class="text-xs text-[#707070] flex items-center gap-2 mt-1">
-                <i class="fa-regular fa-location-dot"></i> <span id="loc-name">Detecting...</span>
+               <span id="loc-name">Detecting...</span>
             </div>
         </div>
         
-        <div class="flex items-center gap-4 w-full md:w-auto justify-end">
-            <!-- Search / Location Control -->
-            <div class="relative w-full md:w-auto">
-                <input type="text" id="loc-search-input" placeholder="Change Location..." class="search-input w-full md:w-[260px]">
-                <button id="btn-geo" class="geo-btn" title="Use Current Location">
+        <div class="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+            <div class="search-container">
+                <input type="text" id="loc-search-input" placeholder="Change Location..." class="input-text-style pr-10">
+                <button id="btn-geo" class="geo-btn-absolute" title="Use Current Location">
                     <i class="fa-solid fa-location-crosshairs"></i>
                 </button>
                 
-                <!-- Results Dropdown -->
                 <div id="search-results" class="search-dropdown">
-                    <!-- Injected via JS -->
-                </div>
+                    </div>
             </div>
 
-            <!-- API Provider Select -->
-            <div class="relative">
-                <select id="provider-select" class="btn-toolbar appearance-none pr-8 outline-none focus:border-indigo-500">
+            <div class="relative w-full md:w-auto">
+                <select id="provider-select" class="btn-toolbar-style w-full appearance-none pr-8 outline-none">
                     <option value="nws">🇺🇸 NWS (USA)</option>
                     <option value="open-meteo">🌍 Open-Meteo</option>
                 </select>
-                <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-xs pointer-events-none text-gray-500"></i>
+                <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-xs pointer-events-none text-gray-400"></i>
             </div>
         </div>
     </header>
 
-    <!-- MAIN CONTENT -->
     <main id="main-content" class="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full flex flex-col gap-6 opacity-0 transition-opacity duration-500">
         
-        <!-- CURRENT CONDITIONS HERO -->
         <div class="weather-card flex flex-col md:flex-row items-center justify-between gap-8">
-            <div class="flex flex-col items-center md:items-start">
-                <div class="text-sm text-[#4f46e5] uppercase tracking-wider font-bold mb-2">Current Conditions</div>
+            <div class="flex flex-col items-center md:items-start text-center md:text-left">
+                <div class="text-xs text-[#4f46e5] uppercase tracking-widest font-bold mb-2">Current Conditions</div>
                 <div class="flex items-center gap-6">
                     <div id="curr-icon" class="current-icon"><i class="fa-solid fa-spinner fa-spin"></i></div>
                     <div>
@@ -395,40 +425,38 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
                 </div>
             </div>
             
-            <div class="grid grid-cols-2 gap-x-12 gap-y-4 text-right">
-                <div>
-                    <div class="text-xs text-[#707070] uppercase">High</div>
+            <div class="grid grid-cols-2 gap-x-12 gap-y-6 text-right w-full md:w-auto">
+                <div class="flex flex-col">
+                    <div class="text-[10px] text-[#707070] uppercase tracking-wider mb-1">High</div>
                     <div id="curr-high" class="text-2xl text-white font-medium">--°</div>
                 </div>
-                <div>
-                    <div class="text-xs text-[#707070] uppercase">Low</div>
+                <div class="flex flex-col">
+                    <div class="text-[10px] text-[#707070] uppercase tracking-wider mb-1">Low</div>
                     <div id="curr-low" class="text-2xl text-gray-400 font-medium">--°</div>
                 </div>
-                <div>
-                    <div class="text-xs text-[#707070] uppercase">Wind</div>
+                <div class="flex flex-col">
+                    <div class="text-[10px] text-[#707070] uppercase tracking-wider mb-1">Wind</div>
                     <div id="curr-wind" class="text-lg text-gray-300">--</div>
                 </div>
-                <div>
-                    <div class="text-xs text-[#707070] uppercase">Humidity</div>
+                <div class="flex flex-col">
+                    <div class="text-[10px] text-[#707070] uppercase tracking-wider mb-1">Humidity</div>
                     <div id="curr-hum" class="text-lg text-gray-300">--%</div>
                 </div>
             </div>
         </div>
 
-        <!-- HOURLY FORECAST -->
-        <div class="weather-card">
-            <div class="text-sm text-gray-500 uppercase tracking-wider mb-4">Hourly Forecast</div>
-            <div id="hourly-container" class="hourly-container">
-                <!-- Injected via JS -->
+        <div class="weather-card overflow-hidden">
+            <div class="text-xs text-gray-500 uppercase tracking-widest mb-2 px-2">Hourly Forecast</div>
+            <div class="scroll-mask-container">
+                <div id="hourly-container" class="hourly-container">
+                    </div>
             </div>
         </div>
 
-        <!-- DAILY FORECAST -->
         <div class="weather-card">
-            <div class="text-sm text-gray-500 uppercase tracking-wider mb-2">7-Day Forecast</div>
+            <div class="text-xs text-gray-500 uppercase tracking-widest mb-4">7-Day Forecast</div>
             <div id="daily-container">
-                <!-- Injected via JS -->
-            </div>
+                </div>
         </div>
 
     </main>
@@ -442,7 +470,7 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
             region: null,
             provider: 'nws', 
             data: null,
-            locationAllowed: false // To track if we can use current location
+            locationAllowed: false 
         };
 
         // --- DOM ELEMENTS ---
@@ -477,10 +505,9 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
         const modalIconCont = document.getElementById('modal-icon-container');
         const modalList = document.getElementById('modal-details-list');
 
-        // --- ICONS MAPPING (UPDATED FOR FA 6 FREE) ---
+        // --- ICONS MAPPING ---
         function getIconFromWMO(code, isDay = 1) {
             const day = isDay === 1;
-            // Mapped to FA 6 Free Icons
             const map = {
                 0: day ? 'fa-sun' : 'fa-moon', 
                 1: day ? 'fa-cloud-sun' : 'fa-cloud-moon',
@@ -498,7 +525,7 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
 
         function getIconFromNWS(shortForecast, isDay) {
             const lower = shortForecast.toLowerCase();
-            const prefix = 'fa-solid'; // FA 6 Free uses solid mostly
+            const prefix = 'fa-solid'; 
             
             if (lower.includes('thunder')) return `${prefix} fa-cloud-bolt`;
             if (lower.includes('snow') || lower.includes('flurries')) return `${prefix} fa-snowflake`;
@@ -571,7 +598,7 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
                 updateLocationDisplay();
             } catch (e) {
                 console.warn("IP location fetch failed:", e);
-                // Fallback to defaults or handle error state
+                // Fallback to defaults (NY)
                 STATE.lat = 40.7128;
                 STATE.lon = -74.0060;
                 STATE.city = "New York";
@@ -589,6 +616,10 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
                 searchResults.classList.remove('active');
                 return;
             }
+            // Show loading state in dropdown
+            searchResults.innerHTML = '<div class="search-item text-gray-500"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Searching...</div>';
+            searchResults.classList.add('active');
+            
             debounceTimer = setTimeout(() => fetchSearchResults(query), 500);
         });
         
@@ -611,12 +642,10 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
             }
             
             try {
-                // Request more results to filter locally
-                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=20&addressdetails=1${viewbox}`;
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10&addressdetails=1${viewbox}`;
                 const res = await fetch(url);
                 const data = await res.json();
                 
-                // Filter for only Places (cities, towns, villages) or Administrative boundaries
                 const filtered = data.filter(item => {
                     const type = item.type;
                     const category = item.class;
@@ -625,13 +654,13 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
                     
                     if (!validClasses.includes(category)) return false;
                     if (category === 'boundary' && type !== 'administrative') return false;
-                    
                     return true;
                 });
 
-                renderSearchResults(filtered.slice(0, 5)); // Show top 5 matches
+                renderSearchResults(filtered.slice(0, 5));
             } catch (e) {
                 console.error("Search failed", e);
+                searchResults.innerHTML = '<div class="search-item text-red-500">Error searching.</div>';
             }
         }
 
@@ -739,7 +768,7 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
             }
         }
 
-        // --- NWS (API.WEATHER.GOV) ---
+        // --- NWS API ---
         async function fetchNWS() {
             loadingText.innerText = "Contacting National Weather Service...";
             const pointsUrl = `https://api.weather.gov/points/${STATE.lat},${STATE.lon}`;
@@ -767,18 +796,15 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
 
         function processNWSData(dailyRaw, hourlyRaw) {
             const current = hourlyRaw.properties.periods[0];
-            
             const periodGroups = {};
             
             dailyRaw.properties.periods.forEach(p => {
                 const date = p.startTime.split('T')[0];
                 if (!periodGroups[date]) {
-                    periodGroups[date] = { temps: [], icons: [], precips: [], winds: [], isDay: [] };
+                    periodGroups[date] = { temps: [], icons: [], isDay: [] };
                 }
                 periodGroups[date].temps.push(p.temperature);
                 periodGroups[date].icons.push(p.shortForecast);
-                periodGroups[date].precips.push(p.probabilityOfPrecipitation.value || 0);
-                periodGroups[date].winds.push(parseInt(p.windSpeed) || 0);
                 periodGroups[date].isDay.push(p.isDaytime);
             });
 
@@ -786,7 +812,6 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
                 const group = periodGroups[date];
                 const high = Math.max(...group.temps);
                 const low = Math.min(...group.temps);
-                
                 let iconDesc = group.icons[0];
                 const dayIdx = group.isDay.indexOf(true);
                 if (dayIdx !== -1) iconDesc = group.icons[dayIdx];
@@ -807,8 +832,7 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
                     low: dailyList[0]?.low || current.temperature - 10,
                     wind: `${current.windSpeed} ${current.windDirection}`,
                     humidity: current.relativeHumidity.value,
-                    iconClass: getIconFromNWS(current.shortForecast, current.isDaytime),
-                    isNWS: true
+                    iconClass: getIconFromNWS(current.shortForecast, current.isDaytime)
                 },
                 hourly: hourlyRaw.properties.periods.slice(0, 24).map(h => ({
                     time: new Date(h.startTime).getHours(),
@@ -826,7 +850,7 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
             };
         }
 
-        // --- OPEN-METEO ---
+        // --- OPEN-METEO API ---
         async function fetchOpenMeteo() {
             loadingText.innerText = "Contacting Open-Meteo...";
             if (!STATE.city) updateLocationDisplay(); 
@@ -842,7 +866,6 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
             const curr = data.current;
             const daily = data.daily;
             const hourly = data.hourly;
-            
             const now = new Date();
             const currentHour = now.getHours();
 
@@ -850,13 +873,11 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
             for(let i = currentHour; i < currentHour + 24; i++) {
                 if (hourly.time[i]) {
                     const d = new Date(hourly.time[i]);
-                    const temp = Math.round(hourly.temperature_2m[i]);
                     const code = hourly.weather_code[i];
-                    
                     hourlyList.push({
                         time: d.getHours(),
                         fullTime: hourly.time[i],
-                        temp: temp,
+                        temp: Math.round(hourly.temperature_2m[i]),
                         desc: getWMODescription(code),
                         iconClass: getIconFromWMO(code, hourly.is_day[i]),
                         details: {
@@ -888,8 +909,7 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
                     low: Math.round(daily.temperature_2m_min[0]),
                     wind: `${Math.round(curr.wind_speed_10m)} mph`,
                     humidity: curr.relative_humidity_2m,
-                    iconClass: getIconFromWMO(curr.weather_code, curr.is_day),
-                    isNWS: false
+                    iconClass: getIconFromWMO(curr.weather_code, curr.is_day)
                 },
                 hourly: hourlyList,
                 daily: dailyList
@@ -936,8 +956,8 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
                     <div class="daily-day">${day.dateName}</div>
                     <div class="daily-icon text-xl"><i class="${day.iconClass}"></i></div>
                     <div class="daily-temps">
-                        <span class="temp-high">${day.high}°</span>
-                        <span class="temp-low">${day.low}°</span>
+                        <span class="temp-high font-medium">${day.high}°</span>
+                        <span class="temp-low text-sm">${day.low}°</span>
                     </div>
                 </div>
             `).join('');
