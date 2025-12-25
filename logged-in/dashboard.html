@@ -126,7 +126,7 @@
             width: 1px;
             height: 100px; 
             background-color: #262626;
-            transition: opacity 0.5s ease, width 0.5s ease;
+            transition: opacity 0.5s ease, width 0.5s ease, margin 0.5s ease;
         }
         .vertical-divider.hidden-anim {
             opacity: 0;
@@ -141,21 +141,25 @@
             flex-direction: column;
             justify-content: center;
             gap: 0.5rem;
-            transition: opacity 0.5s ease, transform 0.5s ease;
+            transition: opacity 0.5s ease, transform 0.5s ease, width 0.5s ease, margin 0.5s ease;
             opacity: 1;
             transform: translateY(0);
+            overflow: visible;
         }
         .weather-section.hidden-anim {
             opacity: 0;
+            width: 0;
+            margin: 0;
             transform: translateY(10px);
             pointer-events: none;
-            position: absolute; /* Take out of flow when hidden */
+            overflow: hidden;
         }
 
         .weather-main {
             display: flex;
             align-items: center;
             gap: 1.2rem;
+            min-width: 150px; /* Keep width during animation if possible */
         }
 
         .weather-icon {
@@ -231,34 +235,35 @@
         
         /* Retry Button */
         #retry-weather-btn {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            width: 40px;
-            height: 40px;
-            border-radius: 14px;
-            border: 1px solid #4b5563;
-            background: transparent;
-            color: #d1d5db;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 100;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.5s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s;
-            transform: scale(0.8) translateY(20px);
+            position: fixed !important;
+            bottom: 2rem !important;
+            right: 2rem !important;
+            width: 40px !important;
+            height: 40px !important;
+            border-radius: 14px !important;
+            border: 1px solid #4b5563 !important;
+            background-color: #040404 !important;
+            color: #d1d5db !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            z-index: 99999 !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s, border-color 0.2s !important;
+            transform: scale(0.8) !important;
         }
         #retry-weather-btn:hover {
-            background-color: #374151;
-            color: white;
-            transform: scale(1.1) translateY(0);
+            background-color: #374151 !important;
+            border-color: #ffffff !important;
+            color: white !important;
+            transform: scale(1.1) !important;
         }
         #retry-weather-btn.visible {
-            opacity: 1;
-            pointer-events: auto;
-            transform: scale(1) translateY(0);
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            transform: scale(1) !important;
         }
         
         /* Font Awesome's base spin animation (needed for custom speed) */
@@ -349,15 +354,15 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
                 </div>
             </div>
             
-            <button id="retry-weather-btn" onclick="retryWeather()" title="Retry Weather">
-                <i class="fa-solid fa-cloud-sun"></i>
-            </button>
-
             <div id="weather-loader">
                 <i class="fa-solid fa-circle-notch fa-spin-slow"></i>
             </div>
             </div>
     </div>
+
+    <button id="retry-weather-btn" onclick="retryWeather()" title="Retry Weather">
+        <i class="fa-solid fa-cloud-sun"></i>
+    </button>
 
     <script type="module">
         import { firebaseConfig } from '../firebase-config.js';
