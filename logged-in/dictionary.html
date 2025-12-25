@@ -349,7 +349,13 @@ body:not(.no-animations) .btn-toolbar-style:active, body:not(.no-animations) .bt
         function updateUrlHash(word) {
             const newHash = word ? `#word=${encodeURIComponent(word.toLowerCase())}` : '';
             if (window.location.hash === newHash) return;
-            history.pushState(null, '', newHash);
+            try {
+                history.pushState(null, '', newHash);
+            } catch (e) {
+                // Ignore SecurityError when running via file:// protocol
+                // or fallback to basic hash assignment if needed
+                window.location.hash = newHash;
+            }
         }
 
         function checkUrlHashForWord() {
