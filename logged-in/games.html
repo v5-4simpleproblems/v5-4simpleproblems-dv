@@ -841,7 +841,7 @@
         }
 
         // --- Game Viewer Logic ---
-        function openZone(game) {
+        async function openZone(game) {
             if (!game || !game.url) return;
             updateURL(categories[currentCategoryIndex], game.id || null);
             
@@ -850,6 +850,35 @@
             const zoneNameEl = document.getElementById('zoneNameEl');
             const downloadBtn = document.getElementById('downloadBtnZone');
             const controls = zoneViewer.querySelector('.zone-controls');
+
+            // --- Custom 404 Page Helper ---
+            const show404 = (errorMsg = "Game content unavailable.") => {
+                const doc = zoneFrame.contentWindow.document;
+                doc.open();
+                doc.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+                        <style>
+                            body { background: #000; color: #fff; font-family: 'Geist', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
+                            h1 { font-size: 4rem; margin: 0; color: #4f46e5; }
+                            p { color: #888; font-size: 1.2rem; max-width: 400px; margin-top: 10px; }
+                            .btn { margin-top: 30px; padding: 10px 25px; border: 1px solid #333; border-radius: 12px; color: #fff; cursor: pointer; background: #111; transition: all 0.2s; }
+                            .btn:hover { border-color: #4f46e5; background: #4f46e51a; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>404</h1>
+                        <p><strong>${game.name}</strong> could not be loaded.<br><span style="font-size: 0.9rem; opacity: 0.7;">${errorMsg}</span></p>
+                        <div class="btn" onclick="window.parent.closeZoneViewer()">Return to Hub</div>
+                    </body>
+                    </html>
+                `);
+                doc.close();
+                zoneViewer.style.display = "flex";
+                zoneViewer.classList.add('active', 'animate-fade-in');
+            };
 
             // Setup Download Button (Specific to Eaglercraft)
             if (game.baseGameId === 'other-eaglercraft' || game.id === 'other-eaglercraft') {
@@ -897,12 +926,19 @@
             const isStandardURLGame = game.category === 'StrongdogXP' || game.category === 'Others' || game.category === 'GN-Math';
             
             if (isStandardURLGame) {
-                zoneFrame.src = game.url;
-                
-                // SHOW WITH ANIMATION
-                zoneViewer.style.display = "flex";
-                zoneViewer.classList.remove('animate-fade-out');
-                zoneViewer.classList.add('active', 'animate-fade-in');
+                // Try fetching to see if it exists (Fixes the jsdelivr redirect bug)
+                try {
+                    const check = await fetch(game.url, { method: 'HEAD' });
+                    if (!check.ok) throw new Error("File not found");
+                    zoneFrame.src = game.url;
+                    
+                    // SHOW WITH ANIMATION
+                    zoneViewer.style.display = "flex";
+                    zoneViewer.classList.remove('animate-fade-out');
+                    zoneViewer.classList.add('active', 'animate-fade-in');
+                } catch (e) {
+                    show404("The game source is broken or blocked.");
+                }
             } else {
                 fetch(`${game.url}?t=${Date.now()}`)
                     .then(response => {
@@ -921,12 +957,7 @@
                         zoneViewer.classList.add('active', 'animate-fade-in');
                     })
                     .catch(error => {
-                        console.error(`Failed to load game "${game.name}": ${error.message}`);
-                        zoneFrame.src = game.url;
-                        
-                        zoneViewer.style.display = "flex";
-                        zoneViewer.classList.remove('animate-fade-out');
-                        zoneViewer.classList.add('active', 'animate-fade-in');
+                        show404(error.message);
                     });
             }
         }
